@@ -1,0 +1,106 @@
+import { useMemo, useState } from 'react';
+import type { TestItem } from '../data/tests';
+import QrCode from './QrCode';
+
+type Scheme = 'ton' | 'tonkeeper' | 'https';
+
+type Props = {
+  item: TestItem;
+  scheme: Scheme;
+  address: string;
+  result: { status: 'ok' | 'not_ok' | null; note: string } | undefined;
+  onChange: (testId: string, next: { status: 'ok' | 'not_ok' | null; note: string }) => void;
+};
+
+export default function TestCard({ item, scheme, address, result, onChange }: Props) {
+  const [showQr, setShowQr] = useState(false);
+  const prefix = scheme === 'https' ? 'https://app.tonkeeper.com/' : scheme + '://';
+  const link = useMemo(() => {
+    return item.linkTemplate.replace('{PREFIX}', prefix).replace('{ADDRESS}', address);
+  }, [item.linkTemplate, prefix, address]);
+
+  const status = result?.status ?? null;
+  const note = result?.note ?? '';
+
+  function setStatus(next: 'ok' | 'not_ok' | null) {
+    onChange(item.id, { status: next, note });
+  }
+
+  function setNote(next: string) {
+    onChange(item.id, { status, note: next });
+  }
+
+  function openLink() {
+    if (scheme === 'https') {
+      window.open(link, '_blank');
+    } else {
+      window.location.href = link;
+    }
+  }
+
+  async function copyLink() {
+    await navigator.clipboard.writeText(link);
+  }
+
+  return (
+    <div style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 6, columnGap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontWeight: 600 }}>{item.title}</span>
+          {item.expectedReject && (
+            <span style={{
+              background: '#ffe6e6',
+              color: '#b00000',
+              border: '1px solid #ffb3b3',
+              borderRadius: 12,
+              fontSize: 12,
+              padding: '2px 8px'
+            }}>Expected: Reject</span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 6, justifySelf: 'end' }}>
+          <button onClick={openLink}>Open</button>
+          <button onClick={copyLink}>Copy</button>
+          <button onClick={() => setShowQr((v) => !v)}>QR</button>
+        </div>
+        <a
+          href={link}
+          target={scheme === 'https' ? '_blank' : undefined}
+          rel="noreferrer"
+          style={{
+            gridColumn: '1 / -1',
+            wordBreak: 'break-all',
+            overflowWrap: 'anywhere',
+            color: '#0366d6',
+            textDecoration: 'underline'
+          }}
+        >
+          {link}
+        </a>
+        <div style={{ gridColumn: '1 / -1' }}>{item.expected}</div>
+      </div>
+
+      {showQr && (
+        <div style={{ marginTop: 8 }}>
+          <QrCode value={link} />
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+        <label>
+          <input type="radio" name={`status-${item.id}`} checked={status === 'ok'} onChange={() => setStatus('ok')} /> OK
+        </label>
+        <label>
+          <input type="radio" name={`status-${item.id}`} checked={status === 'not_ok'} onChange={() => setStatus('not_ok')} /> Not OK
+        </label>
+        <input
+          placeholder="Note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          style={{ flex: '1 1 320px', padding: 6 }}
+        />
+      </div>
+    </div>
+  );
+}
+
