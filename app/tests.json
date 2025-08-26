@@ -3,18 +3,18 @@
     "id": "ton-transfer",
     "title": "TON Transfer",
     "items": [
-      { "id": "ton-address-only", "title": "Address only (user picks amount)", "expected": "Wallet should open Send screen; amount empty. TODO: with comment or amount?", "linkTemplate": "{PREFIX}transfer/{ADDRESS}" },
-      { "id": "ton-amount", "title": "Amount", "expected": "Wallet should open Send screen with TON amount prefilled. TODO: with transaction for send (not form, can't be changed)", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1" },
-      { "id": "ton-text-only", "title": "Text only", "expected": "Wallet should open Send screen with comment prefilled.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?text=test" },
-      { "id": "ton-amount-text", "title": "Amount + text", "expected": "Wallet should open Send screen with amount and comment.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&text=test" },
-      { "id": "ton-dns-amount", "title": "DNS address + amount", "expected": "Wallet should resolve DNS and open Send screen with amount.", "linkTemplate": "{PREFIX}transfer/subbotin.ton?amount=1" }
+      { "id": "ton-address-only", "title": "Address only (user picks amount)", "expected": "Send screen; user can enter amount and optional comment.", "editable": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}" },
+      { "id": "ton-text-only", "title": "Text only", "expected": "Send screen with comment prefilled; user can enter amount. TODO: user can enter ONLY amount, not comment", "editable": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?text=test" },
+      { "id": "ton-amount", "title": "Amount", "expected": "Confirmation screen showing amount; no comment.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1" },
+      { "id": "ton-amount-text", "title": "Amount + text", "expected": "Confirmation screen showing amount and comment.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&text=test" },
+      { "id": "ton-dns-amount", "title": "DNS address + amount", "expected": "Confirmation screen showing amount; DNS resolved.", "linkTemplate": "{PREFIX}transfer/subbotin.ton?amount=1" }
     ]
   },
   {
     "id": "ton-bin",
     "title": "TON + bin",
     "items": [
-      { "id": "ton-amount-bin", "title": "Amount + bin", "expected": "Wallet should emulate/blind‑sign attaching BoC as body.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" },
+      { "id": "ton-amount-bin", "title": "Amount + bin", "expected": "Confirmation screen showing amount; includes binary payload (bin); text 'bin' (default bin).", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&bin={BIN}" },
       { "id": "ton-text-bin-invalid", "title": "Text + bin (invalid)", "expected": "Expected: Reject. text and bin are mutually exclusive.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&text=test&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" },
       { "id": "ton-bin-no-amount-invalid", "title": "bin without amount (invalid)", "expected": "Expected: Reject. bin requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" }
     ]
@@ -23,10 +23,10 @@
     "id": "ton-exp",
     "title": "TON + exp",
     "items": [
-      { "id": "ton-amount-exp", "title": "Amount + exp", "expected": "Valid until exp; expired should be rejected by wallet.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&exp=1796015245" },
-      { "id": "ton-amount-text-exp", "title": "Amount + text + exp", "expected": "Valid until exp.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&text=test&exp=1796015245" },
-      { "id": "ton-text-exp", "title": "Text + exp (no amount)", "expected": "Valid until exp. TODO: not sure", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?text=test&exp=1796015245" },
-      { "id": "ton-amount-bin-exp", "title": "Amount + bin + exp", "expected": "Valid until exp.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg&exp=1796015245" },
+      { "id": "ton-amount-exp", "title": "Amount + exp", "expected": "Confirmation screen showing amount; valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&exp=1796015245" },
+      { "id": "ton-amount-text-exp", "title": "Amount + text + exp", "expected": "Confirmation screen showing amount and comment; valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&text=test&exp=1796015245" },
+      { "id": "ton-text-exp", "title": "Text + exp (no amount)", "expected": "Expected: Reject. exp requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?text=test&exp=1796015245" },
+      { "id": "ton-amount-bin-exp", "title": "Amount + bin + exp", "expected": "Confirmation screen showing amount; includes binary payload (bin); text 'bin' (default bin); valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&bin={BIN}&exp=1796015245" },
       { "id": "ton-expired", "title": "Expired (invalid)", "expected": "Expected: Reject. Current time > exp.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&exp=174000000" }
     ]
   },
@@ -34,29 +34,33 @@
     "id": "ton-init",
     "title": "TON + init",
     "items": [
-      { "id": "ton-amount-init", "title": "Amount + init", "expected": "Message carries StateInit.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init=te6ccgEBAgEACwACATQBAQAI_____w%3D%3D" },
-      { "id": "ton-amount-init-text", "title": "Amount + init + text", "expected": "Comment + StateInit.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init=te6ccgEBAgEACwACATQBAQAI_____w%3D%3D&text=test" },
-      { "id": "ton-amount-init-bin", "title": "Amount + init + bin", "expected": "Payload via bin + StateInit.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init=te6ccgEBAgEACwACATQBAQAI_____w%3D%3D&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" },
-      { "id": "ton-amount-init-bin-exp", "title": "Amount + init + bin + exp", "expected": "Valid until exp.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init=te6ccgEBAgEACwACATQBAQAI_____w%3D%3D&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg&exp=1796015245" },
-      { "id": "ton-amount-init-exp", "title": "Amount + init + exp", "expected": "Valid until exp.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init=te6ccgEBAgEACwACATQBAQAI_____w%3D%3D&exp=1796015245" }
+      { "id": "ton-amount-init", "title": "Amount + init", "expected": "Confirmation screen showing amount; includes StateInit; init field present with value b5ee9c720101010100060000080f0a72a5.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init={INIT}" },
+      { "id": "ton-amount-init-text", "title": "Amount + init + text", "expected": "Confirmation screen showing amount and comment; includes StateInit; init field present with value b5ee9c720101010100060000080f0a72a5.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init={INIT}&text=test" },
+      { "id": "ton-amount-init-bin", "title": "Amount + init + bin", "expected": "Confirmation screen showing amount; includes StateInit and binary payload (bin); init field present with value b5ee9c720101010100060000080f0a72a5; text 'bin' (default bin).", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init={INIT}&bin={BIN}" },
+      { "id": "ton-amount-init-bin-exp", "title": "Amount + init + bin + exp", "expected": "Confirmation screen showing amount; includes StateInit and binary payload (bin); init field present with value b5ee9c720101010100060000080f0a72a5; text 'bin' (default bin); valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init={INIT}&bin={BIN}&exp=1796015245" },
+      { "id": "ton-amount-init-exp", "title": "Amount + init + exp", "expected": "Confirmation screen showing amount; includes StateInit; init field present with value b5ee9c720101010100060000080f0a72a5; valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init={INIT}&exp=1796015245" },
+      { "id": "ton-init-no-amount-invalid", "title": "init without amount (invalid)", "expected": "Expected: Reject. init requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?init={INIT}" },
+      { "id": "ton-init-text-no-amount-invalid", "title": "init + text without amount (invalid)", "expected": "Expected: Reject. init requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?init={INIT}&text=test" },
+      { "id": "ton-init-exp-no-amount-invalid", "title": "init + exp without amount (invalid)", "expected": "Expected: Reject. exp requires amount; init requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?init={INIT}&exp=1796015245" },
+      { "id": "ton-init-bin-no-amount-invalid", "title": "init + bin without amount (invalid)", "expected": "Expected: Reject. bin requires amount; init requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?init={INIT}&bin={BIN}" }
     ]
   },
   {
     "id": "jetton",
     "title": "Jetton Transfer",
     "items": [
-      { "id": "jetton-only", "title": "Jetton master only", "expected": "Opens Jetton transfer screen (amount optional). TODO: screen with amount, commenct can be skiped", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" },
-      { "id": "jetton-amount", "title": "Jetton + amount", "expected": "Amount in token’s smallest units.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" },
-      { "id": "jetton-text-only", "title": "Jetton + text (no amount) TODO: amount screen (comment can't be changed)", "expected": "Commented jetton transfer (amount optional).", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&text=test" },
-      { "id": "jetton-amount-text", "title": "Jetton + amount + text", "expected": "Commented jetton transfer with amount.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&text=test" },
-      { "id": "jetton-amount-bin", "title": "Jetton + amount + bin", "expected": "Blind‑sign/emulation with BoC + jetton.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" },
-      { "id": "jetton-amount-exp", "title": "Jetton + amount + exp", "expected": "Valid until exp.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&exp=1796015245" },
-      { "id": "jetton-exp", "title": "Jetton + exp (no amount) TODO: not sure", "expected": "Valid until exp.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&exp=1796015245" },
+      { "id": "jetton-only", "title": "Jetton master only", "expected": "Jetton send screen; user can enter amount and optional comment.", "editable": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" },
+      { "id": "jetton-text-only", "title": "Jetton + text (no amount)", "expected": "Jetton send screen with comment prefilled; user can enter amount. TODO: user can enter ONLY amount, not comment", "editable": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&text=test" },
+      { "id": "jetton-amount", "title": "Jetton + amount", "expected": "Confirmation screen showing jetton amount; no comment.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" },
+      { "id": "jetton-amount-text", "title": "Jetton + amount + text", "expected": "Confirmation screen showing jetton amount and comment.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&text=test" },
+      { "id": "jetton-amount-bin", "title": "Jetton + amount + bin", "expected": "Confirmation screen showing jetton amount; includes binary payload (bin); text 'bin' (default bin).", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin={BIN}" },
+      { "id": "jetton-amount-exp", "title": "Jetton + amount + exp", "expected": "Confirmation screen showing jetton amount; valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&exp=1796015245" },
+      { "id": "jetton-exp", "title": "Jetton + exp (no amount)", "expected": "Expected: Reject. exp requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&exp=1796015245" },
       { "id": "jetton-bin-no-amount-invalid", "title": "Jetton + bin without amount (invalid)", "expected": "Expected: Reject. bin requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" },
       { "id": "jetton-text-bin-invalid", "title": "Jetton + text + bin (invalid)", "expected": "Expected: Reject. text and bin are mutually exclusive.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&text=test&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" },
       { "id": "jetton-expired", "title": "Jetton expired (invalid)", "expected": "Expected: Reject. Current time > exp.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&exp=174000000" },
-      { "id": "jetton-dns", "title": "Jetton + DNS address", "expected": "Wallet should resolve DNS for jetton transfer.", "linkTemplate": "{PREFIX}transfer/subbotin.ton?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" },
-      { "id": "jetton-amount-bin-exp", "title": "Jetton + amount + bin + exp", "expected": "Valid until exp.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg&exp=1796015245" }
+      { "id": "jetton-dns", "title": "Jetton + DNS address", "expected": "Confirmation screen showing jetton amount; DNS resolved.", "linkTemplate": "{PREFIX}transfer/subbotin.ton?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" },
+      { "id": "jetton-amount-bin-exp", "title": "Jetton + amount + bin + exp", "expected": "Confirmation screen showing jetton amount; includes binary payload (bin); text 'bin' (default bin); valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin={BIN}&exp=1796015245" }
     ]
   },
   {
@@ -66,7 +70,7 @@
       { "id": "buy-ton", "title": "Buy TON", "expected": "Opens on‑ramp flow.", "linkTemplate": "{PREFIX}buy-ton" },
       { "id": "staking", "title": "Staking", "expected": "Opens staking screen.", "linkTemplate": "{PREFIX}staking" },
       { "id": "pool", "title": "Pool/{ADDRESS}", "expected": "Opens a specific liquidity pool.", "linkTemplate": "{PREFIX}pool/{ADDRESS}" },
-      { "id": "exchange-provider", "title": "Exchange (provider only)", "expected": "Opens exchange with selected provider.", "linkTemplate": "{PREFIX}exchange?provider=mercurio" },
+      { "id": "exchange-provider", "title": "Exchange (provider only)", "expected": "Opens exchange with selected provider.", "linkTemplate": "{PREFIX}exchange?provider=mercuryo" },
       { "id": "exchange-provider-toToken", "title": "Exchange (provider + toToken)", "expected": "Opens exchange with provider and target token.", "linkTemplate": "{PREFIX}exchange?provider=mercurio&toToken=TON" },
       { "id": "swap", "title": "Swap from TON to USDT", "expected": "Opens swap interface prefilled.", "linkTemplate": "{PREFIX}swap?fromToken=TON&toToken=USDT" },
       { "id": "battery", "title": "Battery (with promocode)", "expected": "Opens battery screen.", "linkTemplate": "{PREFIX}battery?promocode=TEST" },

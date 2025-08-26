@@ -4,6 +4,7 @@ export type TestItem = {
   expected: string;
   linkTemplate: string; // contains {PREFIX} and may contain {ADDRESS}
   expectedReject?: boolean; // mark tests that must be rejected by wallet
+  editable?: boolean; // mark links where user can edit payment params (usually when amount is absent)
 };
 
 export type TestGroup = {

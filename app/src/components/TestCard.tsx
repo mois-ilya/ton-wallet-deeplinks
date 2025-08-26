@@ -8,21 +8,37 @@ type Props = {
   item: TestItem;
   scheme: Scheme;
   address: string;
-  result: { status: 'ok' | 'not_ok' | null; note: string } | undefined;
-  onChange: (testId: string, next: { status: 'ok' | 'not_ok' | null; note: string }) => void;
+  bin: string;
+  dns: string;
+  initData: string;
+  expValue: number;
+  result: { status: 'ok' | 'partial' | 'not_ok' | null; note: string } | undefined;
+  onChange: (testId: string, next: { status: 'ok' | 'partial' | 'not_ok' | null; note: string }) => void;
 };
 
-export default function TestCard({ item, scheme, address, result, onChange }: Props) {
+export default function TestCard({ item, scheme, address, bin, dns, initData, expValue, result, onChange }: Props) {
   const [showQr, setShowQr] = useState(false);
   const prefix = scheme === 'https' ? 'https://app.tonkeeper.com/' : scheme + '://';
   const link = useMemo(() => {
-    return item.linkTemplate.replace('{PREFIX}', prefix).replace('{ADDRESS}', address);
-  }, [item.linkTemplate, prefix, address]);
+    let processedLink = item.linkTemplate
+      .replace('{PREFIX}', prefix)
+      .replace('{ADDRESS}', address)
+      .replace('{BIN}', bin)
+      .replace('{DNS}', dns)
+      .replace('{INIT}', initData);
+    
+    // Replace exp parameter if present in template
+    if (processedLink.includes('exp=')) {
+      processedLink = processedLink.replace(/exp=\d+/, `exp=${expValue}`);
+    }
+    
+    return processedLink;
+  }, [item.linkTemplate, prefix, address, bin, dns, initData, expValue]);
 
   const status = result?.status ?? null;
   const note = result?.note ?? '';
 
-  function setStatus(next: 'ok' | 'not_ok' | null) {
+  function setStatus(next: 'ok' | 'partial' | 'not_ok' | null) {
     onChange(item.id, { status: next, note });
   }
 
@@ -57,6 +73,16 @@ export default function TestCard({ item, scheme, address, result, onChange }: Pr
               padding: '2px 8px'
             }}>Expected: Reject</span>
           )}
+          {item.editable !== undefined && (
+            <span style={{
+              background: item.editable ? '#e6f4ff' : '#f5f5f5',
+              color: item.editable ? '#0958d9' : '#555',
+              border: `1px solid ${item.editable ? '#91caff' : '#ddd'}`,
+              borderRadius: 12,
+              fontSize: 12,
+              padding: '2px 8px'
+            }}>{item.editable ? 'Editable' : 'Non-editable'}</span>
+          )}
         </div>
         <div style={{ display: 'flex', gap: 6, justifySelf: 'end' }}>
           <button onClick={openLink}>Open</button>
@@ -89,6 +115,9 @@ export default function TestCard({ item, scheme, address, result, onChange }: Pr
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
         <label>
           <input type="radio" name={`status-${item.id}`} checked={status === 'ok'} onChange={() => setStatus('ok')} /> OK
+        </label>
+        <label>
+          <input type="radio" name={`status-${item.id}`} checked={status === 'partial'} onChange={() => setStatus('partial')} /> Partially OK
         </label>
         <label>
           <input type="radio" name={`status-${item.id}`} checked={status === 'not_ok'} onChange={() => setStatus('not_ok')} /> Not OK

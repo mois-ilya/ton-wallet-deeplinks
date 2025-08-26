@@ -1,6 +1,6 @@
 export type ResultItem = {
   testId: string;
-  status: 'ok' | 'not_ok' | null;
+  status: 'ok' | 'partial' | 'not_ok' | null;
   note: string;
 };
 

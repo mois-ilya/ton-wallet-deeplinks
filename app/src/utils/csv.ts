@@ -10,7 +10,12 @@ function escapeCsv(value: string): string {
 export function buildCsv(
   tests: TestItem[],
   results: Record<string, ResultItem>,
-  scheme: 'ton' | 'tonkeeper' | 'https'
+  scheme: 'ton' | 'tonkeeper' | 'https',
+  expValue: number,
+  address: string,
+  bin: string,
+  dns: string,
+  initData: string
 ): string {
   const header = ['id', 'title', 'link', 'expected', 'status', 'note'];
   const rows = [header.join(',')];
@@ -18,7 +23,18 @@ export function buildCsv(
   const prefix = scheme === 'https' ? 'https://app.tonkeeper.com/' : scheme + '://';
 
   for (const t of tests) {
-    const link = t.linkTemplate.replace('{PREFIX}', prefix);
+    let link = t.linkTemplate
+      .replace('{PREFIX}', prefix)
+      .replace('{ADDRESS}', address)
+      .replace('{BIN}', bin)
+      .replace('{DNS}', dns)
+      .replace('{INIT}', initData);
+    
+    // Replace exp parameter if present in template
+    if (link.includes('exp=')) {
+      link = link.replace(/exp=\d+/, `exp=${expValue}`);
+    }
+
     const r = results[t.id];
     const status = r?.status ?? '';
     const note = r?.note ?? '';
