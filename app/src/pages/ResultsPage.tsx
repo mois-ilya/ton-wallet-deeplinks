@@ -89,7 +89,7 @@ function StatusBadge({ status, title }: { status: Status; title?: string }) {
   if (status === 'partial') { bg = '#fff7e6'; color = '#ad6800'; label = 'Partial' }
   if (status === 'not_ok') { bg = '#ffe6e6'; color = '#b00000'; label = 'Not OK' }
   return (
-    <span title={title} style={{ background: bg, color, border: '1px solid #ddd', borderRadius: 12, padding: '2px 8px', fontSize: 12 }}>
+    <span aria-label={label} title={title} style={{ background: bg, color, border: '1px solid #ddd', borderRadius: 12, padding: '2px 8px', fontSize: 12 }}>
       {label}
     </span>
   )
@@ -167,69 +167,89 @@ export default function ResultsPage() {
   }, [byGroup, wallets])
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', padding: '8px 0', borderBottom: '1px solid #eee', marginBottom: 16 }}>
+    <main style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', padding: '8px 0', borderBottom: '1px solid #eee', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontWeight: 800, fontSize: 20, letterSpacing: 0.2 }}>Compatibility Results</div>
-          <Link to="/tests" style={{ color: '#0366d6' }}>Go to tests</Link>
+          <h1 style={{ margin: 0 }}>Compatibility Results</h1>
+          <Link to="/tests" aria-label="Open tests page" style={{ color: '#0366d6' }}>Go to tests</Link>
         </div>
-        <div style={{ marginTop: 6, color: '#666', fontSize: 12 }}>
-          Hover over yellow badges (Partial) or info icons to see details
-        </div>
-      </div>
+        <p style={{ marginTop: 6, color: '#666', fontSize: 12 }}>Hover over yellow badges (Partial) or info icons to see details</p>
+      </header>
 
       {error && <div style={{ color: 'crimson', marginBottom: 12 }}>{error}</div>}
 
-      {/* Group-level summary table */}
-      <div style={{ marginBottom: 20, width: '100%', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '2px solid #ddd', width: '24%' }}>Group</th>
-              {wallets.map((w) => (
-                <th key={w} style={{ textAlign: 'center', padding: '8px 6px', borderBottom: '2px solid #ddd', whiteSpace: 'nowrap' }}>{w}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {groupSummaries.map(({ id, title, perWallet }) => (
-              <tr key={id}>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', fontWeight: 600 }}>{title}</td>
+      {/* Feature summary */}
+      <section aria-labelledby="feature-summary-heading">
+        <h2 id="feature-summary-heading" style={{ margin: '0 0 8px 0' }}>Feature support summary</h2>
+        <p style={{ margin: '0 0 12px 0', color: '#6b7280' }}>
+          Rule: per wallet, a feature is <strong>OK</strong> if all its tests are OK;
+          <strong> Not OK</strong> if there are no OK results and at least one Partial/Not OK/missing;
+          otherwise <strong>Partial</strong>.
+        </p>
+        <div role="region" aria-label="Feature summary table" style={{ marginBottom: 24, width: '100%', overflowX: 'auto', border: '1px solid #eee', borderRadius: 8 }}>
+          <table role="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th scope="col" style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee', width: '24%' }}>Feature</th>
                 {wallets.map((w) => (
-                  <td key={w} style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', textAlign: 'center' }}>
-                    <StatusBadge status={perWallet[w]} />
-                  </td>
+                  <th scope="col" key={w} style={{ textAlign: 'center', padding: '10px 8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{w}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {groupSummaries.map(({ id, title, perWallet }) => (
+                <tr key={id}>
+                  <th scope="row" style={{ padding: '10px 8px', borderBottom: '1px solid #f7f7f7', fontWeight: 600, textAlign: 'left' }}>
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const el = document.getElementById(`group-${id}`);
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
+                      style={{ color: '#0366d6' }}
+                    >
+                      {title}
+                    </a>
+                  </th>
+                  {wallets.map((w) => (
+                    <td key={w} style={{ padding: '10px 8px', borderBottom: '1px solid #f7f7f7', textAlign: 'center' }}>
+                      <StatusBadge status={perWallet[w]} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <h2 style={{ margin: '20px 0 8px' }}>Detailed tests</h2>
+      <hr aria-hidden="true" style={{ height: 2, background: '#eee', border: 0, marginBottom: 12 }} />
 
       {byGroup.map((g) => (
-        <div key={g.id} style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>{g.title}</div>
-          <div style={{ width: '100%', overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <section key={g.id} aria-labelledby={`group-${g.id}`} style={{ marginBottom: 20 }}>
+          <h3 id={`group-${g.id}`} style={{ marginBottom: 8 }}>{g.title}</h3>
+          <div role="region" aria-label={`${g.title} results`} style={{ width: '100%', overflowX: 'auto' }}>
+            <table role="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #eee', width: '30%' }}>Test</th>
+                  <th scope="col" style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #eee', width: '30%' }}>Test</th>
                   {wallets.map((w) => (
-                    <th key={w} style={{ textAlign: 'center', padding: '8px 6px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{w}</th>
+                    <th scope="col" key={w} style={{ textAlign: 'center', padding: '8px 6px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{w}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {g.items.map((r) => (
                   <tr key={r.id}>
-                    <td style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', verticalAlign: 'top' }}>
+                    <th scope="row" style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', verticalAlign: 'top', textAlign: 'left', fontWeight: 600 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ fontWeight: 600 }}>{r.title}</div>
-                        {r.note && (
-                          <span title={r.note} style={{ color: '#666', fontSize: 12, border: '1px solid #ddd', borderRadius: 10, padding: '0 6px', cursor: 'help' }}>i</span>
-                        )}
+                        <span>{r.title}</span>
                       </div>
-                    </td>
+                    </th>
                     {wallets.map((w) => (
                       <td key={w} style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', textAlign: 'center' }}>
                         <StatusBadge status={r.statuses[w]} title={r.statuses[w] === 'partial' ? (r.note || 'Partially supported') : undefined} />
@@ -240,9 +260,9 @@ export default function ResultsPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       ))}
-    </div>
+    </main>
   )
 }
 
