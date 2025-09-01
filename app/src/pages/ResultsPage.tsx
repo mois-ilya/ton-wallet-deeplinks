@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { GROUPS } from '../data/tests'
 
 type Status = '' | 'ok' | 'partial' | 'not_ok'
 
@@ -113,17 +114,56 @@ export default function ResultsPage() {
       .catch((e) => setError('Failed to load results.csv: ' + e.message))
   }, [])
 
-  const byGroup = useMemo(() => {
-    // Group by prefix before first dash in id, fallback to 'misc'
-    const map = new Map<string, ParsedResults['rows']>()
-    for (const r of rows) {
-      const group = (r.id.split('-')[0] || 'misc').toUpperCase()
-      const arr = map.get(group) || []
-      arr.push(r)
-      map.set(group, arr)
+  const idToGroup = useMemo(() => {
+    const map = new Map<string, { id: string; title: string }>()
+    for (const g of GROUPS) {
+      for (const it of g.items) {
+        map.set(it.id, { id: g.id, title: g.title })
+      }
     }
-    return Array.from(map.entries())
-  }, [rows])
+    return map
+  }, [])
+
+  const orderedGroups = useMemo(() => GROUPS.filter((g) => g.id !== 'other').map((g) => ({ id: g.id, title: g.title })), [])
+
+  const byGroup = useMemo(() => {
+    const map = new Map<string, { id: string; title: string; items: ParsedResults['rows'] }>()
+    for (const g of orderedGroups) {
+      map.set(g.id, { id: g.id, title: g.title, items: [] })
+    }
+    for (const r of rows) {
+      const g = idToGroup.get(r.id)
+      if (!g || g.id === 'other') continue
+      const bucket = map.get(g.id)
+      if (bucket) bucket.items.push(r)
+    }
+    return Array.from(map.values())
+  }, [rows, idToGroup, orderedGroups])
+
+  function computeWalletGroupStatus(items: ParsedResults['rows'], wallet: string): Status {
+    let hasOk = false
+    let hasPartial = false
+    let hasNotOk = false
+    for (const it of items) {
+      const s = it.statuses[wallet] || ''
+      if (s === 'ok') hasOk = true
+      else if (s === 'partial') hasPartial = true
+      else hasNotOk = true // treat '' and 'not_ok' as not_ok for summary purposes
+    }
+    if (hasOk && !hasPartial && !hasNotOk) return 'ok'
+    if (!hasOk && (hasPartial || hasNotOk)) return 'not_ok'
+    return 'partial'
+  }
+
+  const groupSummaries = useMemo(() => {
+    return byGroup.map(({ id, title, items }) => {
+      const perWallet: Record<string, Status> = {}
+      for (const w of wallets) {
+        perWallet[w] = computeWalletGroupStatus(items, w)
+      }
+      return { id, title, perWallet }
+    })
+  }, [byGroup, wallets])
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
@@ -139,9 +179,35 @@ export default function ResultsPage() {
 
       {error && <div style={{ color: 'crimson', marginBottom: 12 }}>{error}</div>}
 
-      {byGroup.map(([group, items]) => (
-        <div key={group} style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>{group}</div>
+      {/* Group-level summary table */}
+      <div style={{ marginBottom: 20, width: '100%', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '2px solid #ddd', width: '24%' }}>Group</th>
+              {wallets.map((w) => (
+                <th key={w} style={{ textAlign: 'center', padding: '8px 6px', borderBottom: '2px solid #ddd', whiteSpace: 'nowrap' }}>{w}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {groupSummaries.map(({ id, title, perWallet }) => (
+              <tr key={id}>
+                <td style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', fontWeight: 600 }}>{title}</td>
+                {wallets.map((w) => (
+                  <td key={w} style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', textAlign: 'center' }}>
+                    <StatusBadge status={perWallet[w]} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {byGroup.map((g) => (
+        <div key={g.id} style={{ marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>{g.title}</div>
           <div style={{ width: '100%', overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
@@ -153,7 +219,7 @@ export default function ResultsPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((r) => (
+                {g.items.map((r) => (
                   <tr key={r.id}>
                     <td style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', verticalAlign: 'top' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
