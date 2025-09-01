@@ -1,0 +1,12 @@
+{
+  "name": "TON Wallets Deep Links Tester",
+  "short_name": "TON DL Tester",
+  "start_url": "/ton-wallet-deeplinks/",
+  "display": "standalone",
+  "background_color": "#0b1221",
+  "theme_color": "#0b1221",
+  "icons": [
+    { "src": "/ton-wallet-deeplinks/favicon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/ton-wallet-deeplinks/favicon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
