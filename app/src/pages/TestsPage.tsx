@@ -37,6 +37,7 @@ export default function TestsPage() {
 
   // Timer for exp updates and countdown
   useEffect(() => {
+    document.title = 'TON Wallets Deep Links Tester – Tests'
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -79,7 +80,7 @@ export default function TestsPage() {
     <div style={{ maxWidth: 900, margin: '0 auto', padding: 16 }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', paddingBottom: 8, borderBottom: '1px solid #eee', marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <div style={{ fontWeight: 700, fontSize: 18 }}>TON Wallets Deep Links Tester</div>
+          <div style={{ fontWeight: 800, fontSize: 20, letterSpacing: 0.2 }}>TON Wallets Deep Links Tester</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ fontSize: 14, color: '#666' }}>
               exp updates in: {countdown}s

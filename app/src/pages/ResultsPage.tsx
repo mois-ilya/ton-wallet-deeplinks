@@ -101,6 +101,7 @@ export default function ResultsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    document.title = 'TON Wallets Deep Links Tester – Results'
     fetch(import.meta.env.BASE_URL + 'results.csv')
       .then((r) => {
         if (!r.ok) throw new Error(String(r.status))
@@ -169,7 +170,7 @@ export default function ResultsPage() {
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', padding: '8px 0', borderBottom: '1px solid #eee', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontWeight: 700, fontSize: 18 }}>Compatibility Results</div>
+          <div style={{ fontWeight: 800, fontSize: 20, letterSpacing: 0.2 }}>Compatibility Results</div>
           <Link to="/tests" style={{ color: '#0366d6' }}>Go to tests</Link>
         </div>
         <div style={{ marginTop: 6, color: '#666', fontSize: 12 }}>
