@@ -28,12 +28,8 @@ export function buildCsv(
       .replace('{ADDRESS}', address)
       .replace('{BIN}', bin)
       .replace('{DNS}', dns)
-      .replace('{INIT}', initData);
-    
-    // Replace exp parameter if present in template
-    if (link.includes('exp=')) {
-      link = link.replace(/exp=\d+/, `exp=${expValue}`);
-    }
+      .replace('{INIT}', initData)
+      .replace('{EXP}', String(expValue));
 
     const r = results[t.id];
     const status = r?.status ?? '';

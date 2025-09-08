@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { TestItem } from '../data/tests';
 import QrCode from './QrCode';
 
@@ -20,20 +20,34 @@ export default function TestCard({ item, scheme, address, bin, dns, initData, ex
   const [showQr, setShowQr] = useState(false);
   const prefix = scheme === 'https' ? 'https://app.tonkeeper.com/' : scheme + '://';
   const link = useMemo(() => {
-    let processedLink = item.linkTemplate
+    const processedLink = item.linkTemplate
       .replace('{PREFIX}', prefix)
       .replace('{ADDRESS}', address)
       .replace('{BIN}', bin)
       .replace('{DNS}', dns)
-      .replace('{INIT}', initData);
-    
-    // Replace exp parameter if present in template
-    if (processedLink.includes('exp=')) {
-      processedLink = processedLink.replace(/exp=\d+/, `exp=${expValue}`);
-    }
+      .replace('{INIT}', initData)
+      .replace('{EXP}', String(expValue));
     
     return processedLink;
   }, [item.linkTemplate, prefix, address, bin, dns, initData, expValue]);
+
+  // Expiration helpers
+  const hasExp = item.linkTemplate.includes('{EXP}') || item.linkTemplate.includes('exp=');
+  const usesExpPlaceholder = item.linkTemplate.includes('{EXP}');
+  // If template uses {EXP}, use dynamic value; otherwise parse static value from built link
+  const staticExpMatch = !usesExpPlaceholder ? link.match(/exp=(\d+)/) : null;
+  const effectiveExp = usesExpPlaceholder ? expValue : (staticExpMatch ? parseInt(staticExpMatch[1], 10) : expValue);
+  const remainingSec = Math.max(0, effectiveExp - Math.floor(Date.now() / 1000));
+
+  // Rerender every second for items with exp to update remaining seconds
+  useEffect(() => {
+    if (!hasExp) return;
+    const t = setInterval(() => {
+      // force re-render
+      setShowQr((v) => v);
+    }, 1000);
+    return () => clearInterval(t);
+  }, [hasExp]);
 
   const status = result?.status ?? null;
   const note = result?.note ?? '';
@@ -82,6 +96,16 @@ export default function TestCard({ item, scheme, address, bin, dns, initData, ex
               fontSize: 12,
               padding: '2px 8px'
             }}>{item.editable ? 'Editable' : 'Non-editable'}</span>
+          )}
+          {hasExp && (
+            <span style={{
+              background: '#fff7e6',
+              color: '#ad6800',
+              border: '1px solid #ffd591',
+              borderRadius: 12,
+              fontSize: 12,
+              padding: '2px 8px'
+            }}>expires in: {remainingSec}s</span>
           )}
         </div>
         <div style={{ display: 'flex', gap: 6, justifySelf: 'end' }}>

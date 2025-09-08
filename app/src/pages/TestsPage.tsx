@@ -23,8 +23,14 @@ export default function TestsPage() {
     return 'te6ccgEBAgEACwACATQBAQAI_____w%3D%3D'
   })
   
+  // exp offset (seconds into the future)
+  const [expOffsetSec, setExpOffsetSec] = useState<number>(() => {
+    const saved = localStorage.getItem('deeplinks-stand-expOffsetSec')
+    return saved ? Math.max(1, parseInt(saved, 10) || 30) : 30
+  })
+
   // Dynamic exp parameter: 30 seconds in future, updates every 10 seconds
-  const [expValue, setExpValue] = useState<number>(() => Math.floor(Date.now() / 1000) + 30)
+  const [expValue, setExpValue] = useState<number>(() => Math.floor(Date.now() / 1000) + (localStorage.getItem('deeplinks-stand-expOffsetSec') ? Math.max(1, parseInt(localStorage.getItem('deeplinks-stand-expOffsetSec') as string, 10) || 30) : 30))
   const [countdown, setCountdown] = useState<number>(10)
 
   useEffect(() => {
@@ -35,6 +41,13 @@ export default function TestsPage() {
     localStorage.setItem('deeplinks-stand-address', address)
   }, [address])
 
+  useEffect(() => {
+    localStorage.setItem('deeplinks-stand-expOffsetSec', String(expOffsetSec))
+    // Recompute exp immediately when offset changes and reset countdown
+    setExpValue(Math.floor(Date.now() / 1000) + expOffsetSec)
+    setCountdown(10)
+  }, [expOffsetSec])
+
   // Timer for exp updates and countdown
   useEffect(() => {
     document.title = 'TON Wallets Deep Links Tester – Tests'
@@ -42,7 +55,7 @@ export default function TestsPage() {
       setCountdown((prev) => {
         if (prev <= 1) {
           // Reset countdown and update exp
-          setExpValue(Math.floor(Date.now() / 1000) + 30)
+          setExpValue(Math.floor(Date.now() / 1000) + expOffsetSec)
           return 10
         }
         return prev - 1
@@ -50,7 +63,7 @@ export default function TestsPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [])
+  }, [expOffsetSec])
 
   function updateResult(testId: string, next: { status: 'ok' | 'partial' | 'not_ok' | null; note: string }) {
     setResults((prev) => ({ ...prev, [testId]: { testId, ...next } }))
@@ -106,6 +119,16 @@ export default function TestsPage() {
               <option value="tonkeeper">tonkeeper://</option>
               <option value="https">https://app.tonkeeper.com/</option>
             </select>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap' }}>
+            <label>exp offset (s):</label>
+            <input
+              type="number"
+              min={1}
+              value={expOffsetSec}
+              onChange={(e) => setExpOffsetSec(Math.max(1, Number(e.target.value) || 1))}
+              style={{ width: 110, padding: 6 }}
+            />
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap', flex: '2 1 480px' }}>
             <label>bin:</label>
