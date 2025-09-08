@@ -64,7 +64,8 @@
       { "id": "jetton-dns", "title": "Jetton + DNS address", "expected": "Jetton send screen; DNS resolved; user can enter amount.", "editable": true, "linkTemplate": "{PREFIX}transfer/subbotin.ton?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" },
       { "id": "jetton-dns-amount", "title": "Jetton + DNS address + amount", "expected": "Confirmation screen showing jetton amount; DNS resolved.", "linkTemplate": "{PREFIX}transfer/subbotin.ton?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" },
       { "id": "jetton-amount-init-invalid", "title": "Jetton + amount + init (invalid)", "expected": "Expected: Reject. StateInit is not allowed for jetton transfers.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&init={INIT}" },
-      { "id": "jetton-amount-bin-exp", "title": "Jetton + amount + bin + exp", "expected": "Confirmation screen showing jetton amount; includes binary payload (bin); text 'bin' (default bin); valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin={BIN}&exp={EXP}" }
+      { "id": "jetton-amount-bin-exp", "title": "Jetton + amount + bin + exp", "expected": "Confirmation screen showing jetton amount; includes binary payload (bin); text 'bin' (default bin); valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin={BIN}&exp={EXP}" },
+      { "id": "jetton-unknown-param-invalid", "title": "Unknown parameter (invalid)", "expected": "Expected: Reject. Any parameters not defined by the standard must cause an error.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&unknown=1" }
     ]
   },
   {
