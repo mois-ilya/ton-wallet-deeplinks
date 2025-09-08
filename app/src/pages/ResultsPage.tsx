@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { GROUPS } from '../data/tests'
 
-type Status = '' | 'ok' | 'partial' | 'not_ok'
+type Status = '' | 'ok' | 'partial' | 'not_ok' | 'unknown'
 
 type ParsedResults = {
   wallets: string[]
@@ -110,7 +110,36 @@ export default function ResultsPage() {
       .then((t) => {
         const parsed = parseCsv(t)
         setWallets(parsed.wallets)
-        setRows(parsed.rows)
+
+        // Build rows from tests.json (GROUPS) as the source of truth.
+        const statusById = new Map<string, Record<string, Status>>()
+        for (const r of parsed.rows) statusById.set(r.id, r.statuses)
+
+        const allItems: Array<{ id: string; title: string }> = []
+        for (const g of GROUPS) {
+          for (const it of g.items) {
+            allItems.push({ id: it.id, title: it.title })
+          }
+        }
+
+        const normalizedRows: ParsedResults['rows'] = allItems.map((it) => {
+          const statuses: Record<string, Status> = {}
+          for (const w of parsed.wallets) {
+            const raw = statusById.get(it.id)?.[w] ?? ''
+            const normalized: Status = raw === 'ok' || raw === 'partial' || raw === 'not_ok' ? raw : 'unknown'
+            statuses[w] = normalized
+          }
+          return {
+            id: it.id,
+            title: it.title,
+            link: '',
+            expected: '',
+            note: '',
+            statuses,
+          }
+        })
+
+        setRows(normalizedRows)
       })
       .catch((e) => setError('Failed to load results.csv: ' + e.message))
   }, [])
