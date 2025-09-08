@@ -147,10 +147,23 @@ export default function TestsPage() {
 
       {GROUPS.map((g: TestGroup) => (
         <div key={g.id} style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>{g.title}</div>
-          {g.items.map((t: TestItem) => (
-            <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} initData={initData} expValue={expValue} result={results[t.id]} onChange={updateResult} />
-          ))}
+          {g.id === 'other' ? (
+            <details>
+              <summary style={{ fontWeight: 700, cursor: 'pointer' }}>{g.title}</summary>
+              <div style={{ marginTop: 8 }}>
+                {g.items.map((t: TestItem) => (
+                  <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} initData={initData} expValue={expValue} result={results[t.id]} onChange={updateResult} />
+                ))}
+              </div>
+            </details>
+          ) : (
+            <>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>{g.title}</div>
+              {g.items.map((t: TestItem) => (
+                <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} initData={initData} expValue={expValue} result={results[t.id]} onChange={updateResult} />
+              ))}
+            </>
+          )}
         </div>
       ))}
     </div>
