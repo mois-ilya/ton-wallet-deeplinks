@@ -7,7 +7,8 @@
       { "id": "ton-text-only", "title": "Text only", "expected": "Send screen with comment prefilled; user can enter amount. TODO: user can enter ONLY amount, not comment", "editable": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?text=test" },
       { "id": "ton-amount", "title": "Amount", "expected": "Confirmation screen showing amount; no comment.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1" },
       { "id": "ton-amount-text", "title": "Amount + text", "expected": "Confirmation screen showing amount and comment.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&text=test" },
-      { "id": "ton-dns-amount", "title": "DNS address + amount", "expected": "Confirmation screen showing amount; DNS resolved.", "linkTemplate": "{PREFIX}transfer/subbotin.ton?amount=1" }
+      { "id": "ton-dns-amount", "title": "DNS address + amount", "expected": "Confirmation screen showing amount; DNS resolved.", "linkTemplate": "{PREFIX}transfer/subbotin.ton?amount=1" },
+      { "id": "ton-unknown-param-invalid", "title": "Unknown parameter (invalid)", "expected": "Expected: Reject. Any parameters not defined by the standard must cause an error.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&unknown=1" }
     ]
   },
   {
