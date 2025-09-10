@@ -5,7 +5,7 @@ import { GROUPS, type TestItem, type TestGroup } from '../data/tests'
 import TestCard from '../components/TestCard'
 import { loadResults, saveResults, clearResults, type ResultItem } from '../utils/storage'
 import { buildCsv } from '../utils/csv'
-import { isValidBoc, isLikelyValidAddress } from '../utils/ton'
+import { isValidBoc, isValidStateInit, isLikelyValidAddress } from '../utils/ton'
 
 type Scheme = 'ton' | 'tonkeeper' | 'https'
 
@@ -23,7 +23,7 @@ export default function TestsPage() {
   const [init, setInit] = useState<string>(() => {
     return 'te6ccgEBAgEACwACATQBAQAI_____w%3D%3D'
   })
-  const isInitValid = useMemo(() => isValidBoc(init), [init])
+  const isInitValid = useMemo(() => isValidStateInit(init), [init])
   const isBinValid = useMemo(() => isValidBoc(bin), [bin])
   const isAddressValid = useMemo(() => isLikelyValidAddress(address), [address])
   

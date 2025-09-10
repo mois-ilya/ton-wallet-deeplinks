@@ -1,4 +1,4 @@
-import { Cell, Address } from '@ton/core';
+import { Cell, Address, loadStateInit } from '@ton/core';
 
 function decodeBase64Url(input: string): Buffer {
   const decoded = decodeURIComponent(input.trim());
@@ -24,18 +24,34 @@ export function isLikelyValidAddress(address: string | null | undefined): boolea
 }
 
 
-export function parseInit(init: string): { codeHex: string; dataHex: string; splitDepth: number | null } | null {
+export function parseInit(init: string): { codeHex: string; dataHex: string } | null {
   try {
-    const buf = decodeBase64Url(init);
+    const buf = decodeBase64Url(init.trim());
     const boc = Cell.fromBoc(buf);
-    const slice = boc[0]?.beginParse();
-    if (!slice) return null;
-    const code = slice.loadRef().toBoc({ idx: false, crc32: false }).toString('hex');
-    const data = slice.loadRef().toBoc({ idx: false, crc32: false }).toString('hex');
-    const splitDepth = slice.remainingBits >= 4 ? slice.loadUint(4) : null;
-    return { codeHex: code, dataHex: data, splitDepth };
+    const root = boc[0];
+    if (!root) return null;
+    const slice = root.beginParse();
+    const si = loadStateInit(slice);
+    const codeHex = si.code ? si.code.toBoc({ idx: false, crc32: false }).toString('hex') : '';
+    const dataHex = si.data ? si.data.toBoc({ idx: false, crc32: false }).toString('hex') : '';
+    return { codeHex, dataHex };
   } catch {
     return null;
+  }
+}
+
+export function isValidStateInit(init: string | null | undefined): boolean {
+  if (!init) return false;
+  try {
+    const buf = decodeBase64Url(init.trim());
+    const boc = Cell.fromBoc(buf);
+    const root = boc[0];
+    if (!root) return false;
+    const slice = root.beginParse();
+    loadStateInit(slice);
+    return true;
+  } catch {
+    return false;
   }
 }
 
