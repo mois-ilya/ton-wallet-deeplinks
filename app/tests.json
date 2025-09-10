@@ -85,7 +85,7 @@
       { "id": "swap", "title": "Swap from TON to USDT", "expected": "Opens swap interface prefilled.", "linkTemplate": "{PREFIX}swap?fromToken=TON&toToken=USDT" },
       { "id": "battery", "title": "Battery (with promocode)", "expected": "Opens battery screen.", "linkTemplate": "{PREFIX}battery?promocode=TEST-PROMO" },
       { "id": "action", "title": "Action (eventId)", "expected": "Opens transaction bottom sheet for eventId.", "linkTemplate": "{PREFIX}action?eventId=123" },
-      { "id": "dapp", "title": "DApp (catalog) https URL", "expected": "Opens in‑app browser with a DApp from catalog.", "linkTemplate": "{PREFIX}dapp/https://ton.org" }
+      { "id": "dapp", "title": "DApp (catalog) https URL", "expected": "Opens in‑app browser with a DApp from catalog.", "linkTemplate": "{PREFIX}dapp/https%3A%2F%2Fton.org" }
     ]
   }
 ]
