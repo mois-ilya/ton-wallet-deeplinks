@@ -21,7 +21,7 @@ export default function TestsPage() {
   })
   const [dns, setDns] = useState<string>('subbotin.ton')
   const [init, setInit] = useState<string>(() => {
-    return 'te6ccgEBAgEACwACATQBAQAI_____w%3D%3D'
+    return 'te6ccgEBAwEAEQACATQBAgAI_____wAIAAAAAA'
   })
   const isInitValid = useMemo(() => isValidStateInit(init), [init])
   const isBinValid = useMemo(() => isValidBoc(bin), [bin])

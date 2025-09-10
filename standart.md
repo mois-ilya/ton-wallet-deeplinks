@@ -163,16 +163,16 @@ Adds a **StateInit** cell to the message.
 
 ```text
 # With init
-ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&init=te6ccgEBAgEACwACATQBAQAI_____w%3D%3D
+ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&init=te6ccgEBAwEAEQACATQBAgAI_____wAIAAAAAA
 
 # init + text
-ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&init=te6ccgEBAgEACwACATQBAQAI_____w%3D%3D&text=test
+ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&init=te6ccgEBAwEAEQACATQBAgAI_____wAIAAAAAA&text=test
 
 # init + bin
-ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&init=te6ccgEBAgEACwACATQBAQAI_____w%3D%3D&bin=te6cckEBAQEACQAADgAAAABiaW793PSE
+ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&init=te6ccgEBAwEAEQACATQBAgAI_____wAIAAAAAA&bin=te6cckEBAQEACQAADgAAAABiaW793PSE
 
 # init + bin + exp
-ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&init=te6ccgEBAgEACwACATQBAQAI_____w%3D%3D&bin=te6cckEBAQEACQAADgAAAABiaW793PSE&exp=1796015245
+ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&init=te6ccgEBAwEAEQACATQBAgAI_____wAIAAAAAA&bin=te6cckEBAQEACQAADgAAAABiaW793PSE&exp=1796015245
 ```
 
 ---
