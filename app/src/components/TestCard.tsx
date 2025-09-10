@@ -32,8 +32,8 @@ export default function TestCard({ item, scheme, address, bin, dns, init, initVa
     return processedLink;
   }, [item.linkTemplate, prefix, address, bin, dns, init, expValue]);
 
-  const requiresInit = item.linkTemplate.includes('{INIT}') || item.linkTemplate.includes('init=');
-  const disabled = requiresInit && !initValid;
+  const usesInitPlaceholder = item.linkTemplate.includes('{INIT}');
+  const disabled = usesInitPlaceholder && !initValid;
 
   // Expiration helpers
   const hasExp = item.linkTemplate.includes('{EXP}') || item.linkTemplate.includes('exp=');

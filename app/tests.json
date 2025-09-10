@@ -8,7 +8,8 @@
       { "id": "ton-amount", "title": "Amount", "expected": "Confirmation screen showing amount; no comment.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1" },
       { "id": "ton-amount-text", "title": "Amount + text", "expected": "Confirmation screen showing amount and comment.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&text=test" },
       { "id": "ton-dns-amount", "title": "DNS address + amount", "expected": "Confirmation screen showing amount; DNS resolved.", "linkTemplate": "{PREFIX}transfer/subbotin.ton?amount=1" },
-      { "id": "ton-unknown-param-invalid", "title": "Unknown parameter (invalid)", "expected": "Expected: Reject. Any parameters not defined by the standard must cause an error.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&unknown=1" }
+      { "id": "ton-unknown-param-invalid", "title": "Unknown parameter (invalid)", "expected": "Expected: Reject. Any parameters not defined by the standard must cause an error.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&unknown=1" },
+      { "id": "ton-amount-invalid-format", "title": "Invalid amount format (invalid)", "expected": "Expected: Reject. amount must be a valid decimal number.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1,0a+&text=test" }
     ]
   },
   {
@@ -17,7 +18,8 @@
     "items": [
       { "id": "ton-amount-bin", "title": "Amount + bin", "expected": "Confirmation screen showing amount; includes binary payload (bin); text 'bin' (default bin).", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&bin={BIN}" },
       { "id": "ton-text-bin-invalid", "title": "Text + bin (invalid)", "expected": "Expected: Reject. text and bin are mutually exclusive.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&text=test&bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" },
-      { "id": "ton-bin-no-amount-invalid", "title": "bin without amount (invalid)", "expected": "Expected: Reject. bin requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" }
+      { "id": "ton-bin-no-amount-invalid", "title": "bin without amount (invalid)", "expected": "Expected: Reject. bin requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?bin=te6ccgEBAQEANwAAaV0r640BleSq4Ql3m5OrdlSApYTNRMdDGUFXwTpwZ1oe1G8cPlS_Zym8CwoAdO4mWSned-Fg" },
+      { "id": "ton-bin-invalid-format", "title": "Invalid bin format (invalid)", "expected": "Expected: Reject. bin must be valid base64url.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&bin=not-a-boc" }
     ]
   },
   {
@@ -29,7 +31,8 @@
       { "id": "ton-text-exp", "title": "Text + exp (no amount)", "expected": "Expected: Reject. exp requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?text=test&exp={EXP}" },
       { "id": "ton-amount-bin-exp", "title": "Amount + bin + exp", "expected": "Confirmation screen showing amount; includes binary payload (bin); text 'bin' (default bin); valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&bin={BIN}&exp={EXP}" },
       { "id": "ton-expired", "title": "Expired (invalid)", "expected": "Expected: Reject. Current time > exp.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&exp=174000000" },
-      { "id": "ton-amount-big-exp", "title": "Amount + very large exp (wallet clamps)", "expected": "Wallet should send with its default TTL (e.g., ~5 minutes) even though exp is far in the future.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&exp=9999999999" }
+      { "id": "ton-amount-big-exp", "title": "Amount + very large exp (wallet clamps)", "expected": "Wallet should send with its default TTL (e.g., ~5 minutes) even though exp is far in the future.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&exp=9999999999" },
+      { "id": "ton-exp-invalid-format", "title": "Invalid exp format (invalid)", "expected": "Expected: Reject. exp must be a UNIX timestamp in seconds.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&exp=12ab-" }
     ]
   },
   {
@@ -44,7 +47,8 @@
       { "id": "ton-init-no-amount-invalid", "title": "init without amount (invalid)", "expected": "Expected: Reject. init requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?init={INIT}" },
       { "id": "ton-init-text-no-amount-invalid", "title": "init + text without amount (invalid)", "expected": "Expected: Reject. init requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?init={INIT}&text=test" },
       { "id": "ton-init-exp-no-amount-invalid", "title": "init + exp without amount (invalid)", "expected": "Expected: Reject. exp requires amount; init requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?init={INIT}&exp=1796015245" },
-      { "id": "ton-init-bin-no-amount-invalid", "title": "init + bin without amount (invalid)", "expected": "Expected: Reject. bin requires amount; init requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?init={INIT}&bin={BIN}" }
+      { "id": "ton-init-bin-no-amount-invalid", "title": "init + bin without amount (invalid)", "expected": "Expected: Reject. bin requires amount; init requires amount.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?init={INIT}&bin={BIN}" },
+      { "id": "ton-amount-init-invalid-init", "title": "Amount + invalid init (invalid)", "expected": "Expected: Reject. init is not a valid BOC.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&init=not-a-boc" }
     ]
   },
   {
@@ -65,7 +69,8 @@
       { "id": "jetton-dns-amount", "title": "Jetton + DNS address + amount", "expected": "Confirmation screen showing jetton amount; DNS resolved.", "linkTemplate": "{PREFIX}transfer/subbotin.ton?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs" },
       { "id": "jetton-amount-init-invalid", "title": "Jetton + amount + init (invalid)", "expected": "Expected: Reject. StateInit is not allowed for jetton transfers.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&init={INIT}" },
       { "id": "jetton-amount-bin-exp", "title": "Jetton + amount + bin + exp", "expected": "Confirmation screen showing jetton amount; includes binary payload (bin); text 'bin' (default bin); valid until exp; after expiration wallet rejects.", "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin={BIN}&exp={EXP}" },
-      { "id": "jetton-unknown-param-invalid", "title": "Unknown parameter (invalid)", "expected": "Expected: Reject. Any parameters not defined by the standard must cause an error.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&unknown=1" }
+      { "id": "jetton-unknown-param-invalid", "title": "Unknown parameter (invalid)", "expected": "Expected: Reject. Any parameters not defined by the standard must cause an error.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&unknown=1" },
+      { "id": "jetton-invalid-address", "title": "Jetton + invalid jetton master (invalid)", "expected": "Expected: Reject. jetton must be a valid address.", "expectedReject": true, "linkTemplate": "{PREFIX}transfer/{ADDRESS}?amount=1&jetton=NOT_AN_ADDRESS" }
     ]
   },
   {
