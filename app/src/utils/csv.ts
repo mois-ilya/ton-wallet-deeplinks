@@ -15,7 +15,7 @@ export function buildCsv(
   address: string,
   bin: string,
   dns: string,
-  initData: string
+  init: string
 ): string {
   const header = ['id', 'title', 'link', 'expected', 'status', 'note'];
   const rows = [header.join(',')];
@@ -28,7 +28,7 @@ export function buildCsv(
       .replace('{ADDRESS}', address)
       .replace('{BIN}', bin)
       .replace('{DNS}', dns)
-      .replace('{INIT}', initData)
+      .replace('{INIT}', init)
       .replace('{EXP}', String(expValue));
 
     const r = results[t.id];

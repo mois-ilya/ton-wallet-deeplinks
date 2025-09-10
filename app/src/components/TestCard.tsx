@@ -10,13 +10,14 @@ type Props = {
   address: string;
   bin: string;
   dns: string;
-  initData: string;
+  init: string;
+  initValid?: boolean;
   expValue: number;
   result: { status: 'ok' | 'partial' | 'not_ok' | null; note: string } | undefined;
   onChange: (testId: string, next: { status: 'ok' | 'partial' | 'not_ok' | null; note: string }) => void;
 };
 
-export default function TestCard({ item, scheme, address, bin, dns, initData, expValue, result, onChange }: Props) {
+export default function TestCard({ item, scheme, address, bin, dns, init, initValid = true, expValue, result, onChange }: Props) {
   const [showQr, setShowQr] = useState(false);
   const prefix = scheme === 'https' ? 'https://app.tonkeeper.com/' : scheme + '://';
   const link = useMemo(() => {
@@ -25,11 +26,14 @@ export default function TestCard({ item, scheme, address, bin, dns, initData, ex
       .replace('{ADDRESS}', address)
       .replace('{BIN}', bin)
       .replace('{DNS}', dns)
-      .replace('{INIT}', initData)
+      .replace('{INIT}', init)
       .replace('{EXP}', String(expValue));
     
     return processedLink;
-  }, [item.linkTemplate, prefix, address, bin, dns, initData, expValue]);
+  }, [item.linkTemplate, prefix, address, bin, dns, init, expValue]);
+
+  const requiresInit = item.linkTemplate.includes('{INIT}') || item.linkTemplate.includes('init=');
+  const disabled = requiresInit && !initValid;
 
   // Expiration helpers
   const hasExp = item.linkTemplate.includes('{EXP}') || item.linkTemplate.includes('exp=');
@@ -61,6 +65,7 @@ export default function TestCard({ item, scheme, address, bin, dns, initData, ex
   }
 
   function openLink() {
+    if (disabled) return;
     if (scheme === 'https') {
       window.open(link, '_blank');
     } else {
@@ -69,6 +74,7 @@ export default function TestCard({ item, scheme, address, bin, dns, initData, ex
   }
 
   async function copyLink() {
+    if (disabled) return;
     await navigator.clipboard.writeText(link);
   }
 
@@ -109,9 +115,9 @@ export default function TestCard({ item, scheme, address, bin, dns, initData, ex
           )}
         </div>
         <div style={{ display: 'flex', gap: 6, justifySelf: 'end' }}>
-          <button onClick={openLink}>Open</button>
-          <button onClick={copyLink}>Copy</button>
-          <button onClick={() => setShowQr((v) => !v)}>QR</button>
+          <button onClick={openLink} disabled={disabled} aria-disabled={disabled}>Open</button>
+          <button onClick={copyLink} disabled={disabled} aria-disabled={disabled}>Copy</button>
+          <button onClick={() => setShowQr((v) => !v)} disabled={disabled} aria-disabled={disabled}>QR</button>
         </div>
         <a
           href={link}
@@ -121,13 +127,21 @@ export default function TestCard({ item, scheme, address, bin, dns, initData, ex
             gridColumn: '1 / -1',
             wordBreak: 'break-all',
             overflowWrap: 'anywhere',
-            color: '#0366d6',
-            textDecoration: 'underline'
+            color: disabled ? '#999' : '#0366d6',
+            textDecoration: 'underline',
+            pointerEvents: disabled ? 'none' : undefined
           }}
         >
           {link}
         </a>
-        <div style={{ gridColumn: '1 / -1' }}>{item.expected}</div>
+        <div style={{ gridColumn: '1 / -1' }}>
+          {item.expected}
+          {disabled && (
+            <span style={{ marginLeft: 8, background: '#fff1f0', color: '#cf1322', border: '1px solid #ffa39e', borderRadius: 12, fontSize: 12, padding: '2px 8px' }}>
+              disabled: invalid init
+            </span>
+          )}
+        </div>
       </div>
 
       {showQr && (
@@ -138,18 +152,19 @@ export default function TestCard({ item, scheme, address, bin, dns, initData, ex
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
         <label>
-          <input type="radio" name={`status-${item.id}`} checked={status === 'ok'} onChange={() => setStatus('ok')} /> OK
+          <input type="radio" name={`status-${item.id}`} checked={status === 'ok'} onChange={() => setStatus('ok')} disabled={disabled} /> OK
         </label>
         <label>
-          <input type="radio" name={`status-${item.id}`} checked={status === 'partial'} onChange={() => setStatus('partial')} /> Partially OK
+          <input type="radio" name={`status-${item.id}`} checked={status === 'partial'} onChange={() => setStatus('partial')} disabled={disabled} /> Partially OK
         </label>
         <label>
-          <input type="radio" name={`status-${item.id}`} checked={status === 'not_ok'} onChange={() => setStatus('not_ok')} /> Not OK
+          <input type="radio" name={`status-${item.id}`} checked={status === 'not_ok'} onChange={() => setStatus('not_ok')} disabled={disabled} /> Not OK
         </label>
         <input
           placeholder="Note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
+          disabled={disabled}
           style={{ flex: '1 1 320px', padding: 6 }}
         />
       </div>

@@ -5,6 +5,7 @@ import { GROUPS, type TestItem, type TestGroup } from '../data/tests'
 import TestCard from '../components/TestCard'
 import { loadResults, saveResults, clearResults, type ResultItem } from '../utils/storage'
 import { buildCsv } from '../utils/csv'
+import { isValidInitBoc } from '../utils/ton'
 
 type Scheme = 'ton' | 'tonkeeper' | 'https'
 
@@ -19,9 +20,10 @@ export default function TestsPage() {
     return 'te6cckEBAQEACQAADgAAAABiaW793PSE'
   })
   const [dns, setDns] = useState<string>('subbotin.ton')
-  const [initData, setInitData] = useState<string>(() => {
+  const [init, setInit] = useState<string>(() => {
     return 'te6ccgEBAgEACwACATQBAQAI_____w%3D%3D'
   })
+  const isInitValid = useMemo(() => isValidInitBoc(init), [init])
   
   // exp offset (seconds into the future)
   const [expOffsetSec, setExpOffsetSec] = useState<number>(() => {
@@ -75,7 +77,7 @@ export default function TestsPage() {
   }
 
   const allTests = useMemo(() => GROUPS.flatMap((g) => g.items), [])
-  const csv = useMemo(() => buildCsv(allTests, results, scheme, expValue, address, bin, dns, initData), [results, scheme, expValue, address, bin, dns, initData, allTests])
+  const csv = useMemo(() => buildCsv(allTests, results, scheme, expValue, address, bin, dns, init), [results, scheme, expValue, address, bin, dns, init, allTests])
 
   function downloadCsv() {
     const now = new Date().toISOString().replace(/[:]/g, '-')
@@ -139,8 +141,9 @@ export default function TestsPage() {
             <input value={dns} onChange={(e) => setDns(e.target.value)} style={{ minWidth: 180, padding: 6 }} />
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap', flex: '2 1 480px' }}>
-            <label>initData:</label>
-            <input value={initData} onChange={(e) => setInitData(e.target.value)} style={{ minWidth: 260, flex: '1 1 360px', padding: 6 }} />
+            <label>init:</label>
+            <input value={init} onChange={(e) => setInit(e.target.value)} style={{ minWidth: 260, flex: '1 1 360px', padding: 6, borderColor: isInitValid ? undefined : 'crimson' }} />
+            {!isInitValid && <span style={{ color: 'crimson', fontSize: 12 }}>invalid</span>}
           </div>
         </div>
       </div>
@@ -152,7 +155,7 @@ export default function TestsPage() {
               <summary style={{ fontWeight: 700, cursor: 'pointer' }}>{g.title}</summary>
               <div style={{ marginTop: 8 }}>
                 {g.items.map((t: TestItem) => (
-                  <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} initData={initData} expValue={expValue} result={results[t.id]} onChange={updateResult} />
+                  <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} expValue={expValue} result={results[t.id]} onChange={updateResult} />
                 ))}
               </div>
             </details>
@@ -160,7 +163,7 @@ export default function TestsPage() {
             <>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>{g.title}</div>
               {g.items.map((t: TestItem) => (
-                <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} initData={initData} expValue={expValue} result={results[t.id]} onChange={updateResult} />
+                <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} expValue={expValue} result={results[t.id]} onChange={updateResult} />
               ))}
             </>
           )}
