@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { TestItem } from '../data/tests';
 import QrCode from './QrCode';
+import { parseInit } from '../utils/ton';
 
 type Scheme = 'ton' | 'tonkeeper' | 'https';
 
@@ -38,6 +39,8 @@ export default function TestCard({ item, scheme, address, bin, dns, init, initVa
   const disabledDueToInit = usesInitPlaceholder && !initValid;
   const disabledDueToBin = usesBinPlaceholder && !binValid;
   const disabled = disabledDueToInit || disabledDueToBin;
+
+  const parsedInit = useMemo(() => (usesInitPlaceholder && initValid ? parseInit(init) : null), [usesInitPlaceholder, initValid, init]);
 
   // Expiration helpers
   const hasExp = item.linkTemplate.includes('{EXP}') || item.linkTemplate.includes('exp=');
@@ -149,6 +152,14 @@ export default function TestCard({ item, scheme, address, bin, dns, init, initVa
             disabledDueToInit ? 'invalid init' : null,
             disabledDueToBin ? 'invalid bin' : null,
           ].filter(Boolean).join(', ')}
+        </div>
+      )}
+
+      {parsedInit && (
+        <div style={{ marginTop: 8, background: '#ffffff', color: '#135200' }}>
+          init.code field present with value {parsedInit.codeHex}
+          <br />
+          init.data field present with value {parsedInit.dataHex}
         </div>
       )}
 
