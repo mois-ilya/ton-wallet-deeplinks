@@ -5,7 +5,7 @@ import { GROUPS, type TestItem, type TestGroup } from '../data/tests'
 import TestCard from '../components/TestCard'
 import { loadResults, saveResults, clearResults, type ResultItem } from '../utils/storage'
 import { buildCsv } from '../utils/csv'
-import { isValidInitBoc } from '../utils/ton'
+import { isValidBoc, isLikelyValidAddress } from '../utils/ton'
 
 type Scheme = 'ton' | 'tonkeeper' | 'https'
 
@@ -23,7 +23,9 @@ export default function TestsPage() {
   const [init, setInit] = useState<string>(() => {
     return 'te6ccgEBAgEACwACATQBAQAI_____w%3D%3D'
   })
-  const isInitValid = useMemo(() => isValidInitBoc(init), [init])
+  const isInitValid = useMemo(() => isValidBoc(init), [init])
+  const isBinValid = useMemo(() => isValidBoc(bin), [bin])
+  const isAddressValid = useMemo(() => isLikelyValidAddress(address), [address])
   
   // exp offset (seconds into the future)
   const [expOffsetSec, setExpOffsetSec] = useState<number>(() => {
@@ -111,8 +113,9 @@ export default function TestsPage() {
             <input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              style={{ minWidth: 260, flex: '1 1 360px', padding: 6 }}
+              style={{ minWidth: 260, flex: '1 1 360px', padding: 6, borderColor: isAddressValid ? undefined : 'crimson' }}
             />
+            {!isAddressValid && <span style={{ color: 'crimson', fontSize: 12 }}>suspicious</span>}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap' }}>
             <label>Scheme:</label>
@@ -134,7 +137,8 @@ export default function TestsPage() {
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap', flex: '2 1 480px' }}>
             <label>bin:</label>
-            <input value={bin} onChange={(e) => setBin(e.target.value)} style={{ minWidth: 260, flex: '1 1 360px', padding: 6 }} />
+            <input value={bin} onChange={(e) => setBin(e.target.value)} style={{ minWidth: 260, flex: '1 1 360px', padding: 6, borderColor: isBinValid ? undefined : 'crimson' }} />
+            {!isBinValid && <span style={{ color: 'crimson', fontSize: 12 }}>invalid</span>}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap' }}>
             <label>dns:</label>
@@ -155,7 +159,7 @@ export default function TestsPage() {
               <summary style={{ fontWeight: 700, cursor: 'pointer' }}>{g.title}</summary>
               <div style={{ marginTop: 8 }}>
                 {g.items.map((t: TestItem) => (
-                  <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} expValue={expValue} result={results[t.id]} onChange={updateResult} />
+                  <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} binValid={isBinValid} expValue={expValue} result={results[t.id]} onChange={updateResult} />
                 ))}
               </div>
             </details>
@@ -163,7 +167,7 @@ export default function TestsPage() {
             <>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>{g.title}</div>
               {g.items.map((t: TestItem) => (
-                <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} expValue={expValue} result={results[t.id]} onChange={updateResult} />
+                <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} binValid={isBinValid} expValue={expValue} result={results[t.id]} onChange={updateResult} />
               ))}
             </>
           )}

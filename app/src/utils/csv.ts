@@ -23,7 +23,7 @@ export function buildCsv(
   const prefix = scheme === 'https' ? 'https://app.tonkeeper.com/' : scheme + '://';
 
   for (const t of tests) {
-    let link = t.linkTemplate
+    const link = t.linkTemplate
       .replace('{PREFIX}', prefix)
       .replace('{ADDRESS}', address)
       .replace('{BIN}', bin)

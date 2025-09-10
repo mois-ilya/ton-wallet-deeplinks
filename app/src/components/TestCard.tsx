@@ -12,12 +12,13 @@ type Props = {
   dns: string;
   init: string;
   initValid?: boolean;
+  binValid?: boolean;
   expValue: number;
   result: { status: 'ok' | 'partial' | 'not_ok' | null; note: string } | undefined;
   onChange: (testId: string, next: { status: 'ok' | 'partial' | 'not_ok' | null; note: string }) => void;
 };
 
-export default function TestCard({ item, scheme, address, bin, dns, init, initValid = true, expValue, result, onChange }: Props) {
+export default function TestCard({ item, scheme, address, bin, dns, init, initValid = true, binValid = true, expValue, result, onChange }: Props) {
   const [showQr, setShowQr] = useState(false);
   const prefix = scheme === 'https' ? 'https://app.tonkeeper.com/' : scheme + '://';
   const link = useMemo(() => {
@@ -33,7 +34,10 @@ export default function TestCard({ item, scheme, address, bin, dns, init, initVa
   }, [item.linkTemplate, prefix, address, bin, dns, init, expValue]);
 
   const usesInitPlaceholder = item.linkTemplate.includes('{INIT}');
-  const disabled = usesInitPlaceholder && !initValid;
+  const usesBinPlaceholder = item.linkTemplate.includes('{BIN}');
+  const disabledDueToInit = usesInitPlaceholder && !initValid;
+  const disabledDueToBin = usesBinPlaceholder && !binValid;
+  const disabled = disabledDueToInit || disabledDueToBin;
 
   // Expiration helpers
   const hasExp = item.linkTemplate.includes('{EXP}') || item.linkTemplate.includes('exp=');
@@ -136,13 +140,17 @@ export default function TestCard({ item, scheme, address, bin, dns, init, initVa
         </a>
         <div style={{ gridColumn: '1 / -1' }}>
           {item.expected}
-          {disabled && (
-            <span style={{ marginLeft: 8, background: '#fff1f0', color: '#cf1322', border: '1px solid #ffa39e', borderRadius: 12, fontSize: 12, padding: '2px 8px' }}>
-              disabled: invalid init
-            </span>
-          )}
         </div>
       </div>
+
+      {disabled && (
+        <div style={{ marginTop: 8, background: '#fff1f0', color: '#cf1322', border: '1px solid #ffa39e', borderRadius: 6, padding: '6px 8px' }}>
+          disabled: {[
+            disabledDueToInit ? 'invalid init' : null,
+            disabledDueToBin ? 'invalid bin' : null,
+          ].filter(Boolean).join(', ')}
+        </div>
+      )}
 
       {showQr && (
         <div style={{ marginTop: 8 }}>
