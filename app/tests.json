@@ -79,7 +79,7 @@
     "items": [
       { "id": "buy-ton", "title": "Buy TON", "expected": "Opens on‑ramp flow.", "linkTemplate": "{PREFIX}buy-ton" },
       { "id": "staking", "title": "Staking", "expected": "Opens staking screen.", "linkTemplate": "{PREFIX}staking" },
-      { "id": "pool", "title": "Pool/{ADDRESS}", "expected": "Opens a specific liquidity pool.", "linkTemplate": "{PREFIX}pool/:a45b17f28409229b78360e3290420f13e4fe20f90d7e2bf8c4ac6703259e22fa" },
+      { "id": "pool", "title": "Pool/{ADDRESS}", "expected": "Opens a specific liquidity pool.", "linkTemplate": "{PREFIX}pool/0:a45b17f28409229b78360e3290420f13e4fe20f90d7e2bf8c4ac6703259e22fa" },
       { "id": "exchange-provider", "title": "??? Exchange (provider only)", "expected": "Opens exchange with selected provider.", "linkTemplate": "{PREFIX}exchange?provider=mercuryo" },
       { "id": "exchange-provider-toToken", "title": "??? Exchange (provider + toToken)", "expected": "Opens exchange with provider and target token.", "linkTemplate": "{PREFIX}exchange?provider=mercurio&toToken=TON" },
       { "id": "swap", "title": "Swap from TON to USDT", "expected": "Opens swap interface prefilled.", "linkTemplate": "{PREFIX}swap?fromToken=TON&toToken=USDT" },
