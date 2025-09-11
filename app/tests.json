@@ -80,9 +80,8 @@
       { "id": "buy-ton", "title": "Buy TON", "expected": "Opens on‑ramp flow.", "linkTemplate": "{PREFIX}buy-ton" },
       { "id": "staking", "title": "Staking", "expected": "Opens staking screen.", "linkTemplate": "{PREFIX}staking" },
       { "id": "pool", "title": "Pool/{ADDRESS}", "expected": "Opens a specific liquidity pool.", "linkTemplate": "{PREFIX}pool/0:a45b17f28409229b78360e3290420f13e4fe20f90d7e2bf8c4ac6703259e22fa" },
-      { "id": "exchange-provider", "title": "??? Exchange (provider only)", "expected": "Opens exchange with selected provider.", "linkTemplate": "{PREFIX}exchange?provider=mercuryo" },
-      { "id": "exchange-provider-toToken", "title": "??? Exchange (provider + toToken)", "expected": "Opens exchange with provider and target token.", "linkTemplate": "{PREFIX}exchange?provider=mercurio&toToken=TON" },
-      { "id": "swap", "title": "Swap from TON to USDT", "expected": "Opens swap interface prefilled.", "linkTemplate": "{PREFIX}swap?fromToken=TON&toToken=USDT" },
+      { "id": "exchange", "title": "Exchange", "expected": "Opens exchange.", "linkTemplate": "{PREFIX}exchange" },
+      { "id": "swap", "title": "Swap from tsTON to USDT", "expected": "Opens swap interface prefilled.", "linkTemplate": "{PREFIX}swap?fromToken=tsTON&toToken=USDT" },
       { "id": "battery", "title": "Battery (with promocode)", "expected": "Opens battery screen.", "linkTemplate": "{PREFIX}battery?promocode=TEST-PROMO" },
       { "id": "action", "title": "??? Action/{BOC}", "expected": "Opens transaction bottom sheet for boc.", "linkTemplate": "{PREFIX}action/aeb7ccf6b25ada11382f2698062e44d607f32174cb39827e87f2a85c07d062c9" },
       { "id": "dapp", "title": "DApp (catalog) https URL", "expected": "Opens in‑app browser with a DApp from catalog.", "linkTemplate": "{PREFIX}dapp/https%3A%2F%2Fton.org" }
