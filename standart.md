@@ -6,9 +6,9 @@ This guide makes the behavior **unambiguous** and **complete**, covering all sup
 
 > **Notation used below**
 >
-> - `{PREFIX}` means one of the three interchangeable schemes: `ton://` or `https://app.tonkeeper.com/`.
-> - `{ADDRESS}` means a valid TON recipient address. It can be a raw address or a **TON DNS** name like `example.ton`.
-> - Unless noted otherwise, **all parameter values must be URL‑encoded**.
+> -   `{PREFIX}` means one of the three interchangeable schemes: `ton://` or `https://app.tonkeeper.com/`.
+> -   `{ADDRESS}` means a valid TON recipient address. It can be a raw address or a **TON DNS** name like `example.ton`.
+> -   Unless noted otherwise, **all parameter values must be URL‑encoded**.
 
 ---
 
@@ -16,9 +16,9 @@ This guide makes the behavior **unambiguous** and **complete**, covering all sup
 
 Tonkeeper supports three interchangeable schemes. Choose any of them depending on your environment:
 
-- **`ton://`** — TON standard scheme. Recommended for cross‑wallet compatibility.
-  {/* - **`tonkeeper://`** — custom scheme for direct app deep link on mobile. */}
-- **`https://app.tonkeeper.com/`** — web scheme usable from browsers and environments without custom schemes.
+-   **`ton://`** — TON standard scheme. Recommended for cross‑wallet compatibility.
+    {/_ - **`tonkeeper://`** — custom scheme for direct app deep link on mobile. _/}
+-   **`https://app.tonkeeper.com/`** — web scheme usable from browsers and environments without custom schemes.
 
 All three schemes accept **the same path and query parameters**. You can replace `{PREFIX}` with any of them.
 
@@ -28,8 +28,8 @@ All three schemes accept **the same path and query parameters**. You can replace
 
 `{ADDRESS}` accepts:
 
-- A valid TON address in friendly format (bounceable/unbounceable) or raw.
-- A **TON DNS** name ending with `.ton` (e.g., `example.ton`).
+-   A valid TON address in friendly format (bounceable/unbounceable) or raw.
+-   A **TON DNS** name ending with `.ton` (e.g., `example.ton`).
 
 ---
 
@@ -40,8 +40,8 @@ The following parameters are used across transfer links. Types are given using s
 > **Flow modes**
 > Mode is determined **solely** by whether `amount` is present.
 >
-> - **Editable (Send screen):** `amount` is **absent**. The user can enter the amount and an optional `text`. `bin`, `exp`, and `init` are not accepted in this mode.
-> - **Confirmation (non‑editable):** `amount` is **present**. The request is fixed; the user only confirms or cancels. In this mode you may include `text` **or** `bin` (mutually exclusive), `exp`, and (for TON only) `init`.
+> -   **Editable (Send screen):** `amount` is **absent**. The user can enter the amount and an optional `text`. `bin`, `exp`, and `init` are not accepted in this mode.
+> -   **Confirmation (non‑editable):** `amount` is **present**. The request is fixed; the user only confirms or cancels. In this mode you may include `text` **or** `bin` (mutually exclusive), `exp`, and (for TON only) `init`.
 
 <br />
 
@@ -93,10 +93,10 @@ Opens the emulation screen or a blind‑signing warning. The payload is attached
 
 **Rules**
 
-- `bin` must be a **URL‑encoded base64 BoC**.
-- `amount` is **required** when `bin` is present.
-- `text` **must not** be combined with `bin`.
-- Links with `bin` are **non-editable** (confirmation screen only).
+-   `bin` must be a **URL‑encoded base64 BoC**.
+-   `amount` is **required** when `bin` is present.
+-   `text` **must not** be combined with `bin`.
+-   Links with `bin` are **non-editable** (confirmation screen only).
 
 **Format**
 
@@ -118,11 +118,11 @@ ton://transfer/UQCae11h9N5znylEPRjmuLYGvIwnxkcCw4zVW4BJjVASi5eL?amount=1&text=te
 
 **Rules**
 
-- `amount` is **required** when `exp` is present.
-- `exp` is a UNIX timestamp in **seconds**.
-- Clients must **reject** expired transactions.
-- Can be combined with any valid combination (e.g., `text`, `bin`, `init`).
-- Links with `exp` are **non-editable** (confirmation screen only).
+-   `amount` is **required** when `exp` is present.
+-   `exp` is a UNIX timestamp in **seconds**.
+-   Clients must **reject** expired transactions.
+-   Can be combined with any valid combination (e.g., `text`, `bin`, `init`).
+-   Links with `exp` are **non-editable** (confirmation screen only).
 
 **How `exp` works**
 
@@ -161,10 +161,10 @@ Adds a **StateInit** cell to the message.
 
 **Rules**
 
-- `init` must be a URL‑encoded base64 StateInit.
-- Can be combined with `text`, `exp`, and `bin`.
-- `amount` is **required** when `init` is present.
-- Links with `init` are **non-editable** (confirmation screen only).
+-   `init` must be a URL‑encoded base64 StateInit.
+-   Can be combined with `text`, `exp`, and `bin`.
+-   `amount` is **required** when `init` is present.
+-   Links with `init` are **non-editable** (confirmation screen only).
 
 **Examples**
 
@@ -196,8 +196,8 @@ Opens the Send screen for a **jetton** transfer. All rules about `text`, `bin`, 
 
 **Parameter specifics**
 
-- `jetton` — **required** jetton master address.
-- `amount` — amount of **jettons in the token’s smallest units** (atomic units). May be omitted; user can fill the amount manually.
+-   `jetton` — **required** jetton master address.
+-   `amount` — amount of **jettons in the token’s smallest units** (atomic units). May be omitted; user can fill the amount manually.
 
 **Examples**
 
@@ -236,25 +236,27 @@ ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?jetton=EQCxE6mUt
 
 Clients SHOULD validate and handle the following cases:
 
-- `amount` missing **when `bin` is present** → reject.
-- `exp` without `amount` → reject.
-- `text` + `bin` together → reject.
-- `amount` must be a non‑negative integer. `0` is allowed but may be rejected by UX policy; in most cases a **positive** value is expected.
-- `exp` must be a valid UNIX timestamp (seconds). When current time > `exp` → reject.
-- `bin` must be a valid URL‑encoded base64 BoC → otherwise reject.
-- `init` must be valid URL‑encoded base64 StateInit → otherwise reject.
-- `init` without `amount` → reject.
-- `jetton` with any `init` → reject.
-- DNS address that cannot be resolved → reject.
-- Duplicate parameters → reject.
-- Unknown parameters → reject.
+-   `amount` missing **when `bin` is present** → reject.
+-   `exp` without `amount` → reject.
+-   `text` + `bin` together → reject.
+-   `amount` must be a non‑negative integer. `0` is allowed but may be rejected by UX policy; in most cases a **positive** value is expected.
+-   `exp` must be a valid UNIX timestamp (seconds). When current time > `exp` → reject.
+-   `bin` must be a valid URL‑encoded base64 BoC → otherwise reject.
+-   `init` must be valid URL‑encoded base64 StateInit → otherwise reject.
+-   `init` without `amount` → reject.
+-   `jetton` with any `init` → reject.
+-   DNS address that cannot be resolved → reject.
+-   Duplicate parameters → reject.
+-   Unknown parameters → reject.
 
 > By default, any parameter value that does not conform to its declared type or format in the Quick Reference (e.g., non‑integer `amount`/`exp`, malformed `bin`/`init`, invalid `jetton` address) MUST be treated as invalid and rejected.
 
 > **User messaging**: Implementations may display errors like _“Invalid parameters”_ for invalid combinations.
 
 ---
-{/* 
+
+{/*
+
 ## Other Deep Links
 
 These actions keep the same `{PREFIX}` semantics.
@@ -289,8 +291,8 @@ Opens a specific liquidity pool. `{ADDRESS}` — pool address.
 {PREFIX}exchange?provider={PROVIDER}&toToken={TO_TOKEN}
 ```
 
-- `provider` (required) — exchange provider ID (e.g., `mercurio`).
-- `toToken` (optional) — token to take.
+-   `provider` (required) — exchange provider ID (e.g., `mercurio`).
+-   `toToken` (optional) — token to take.
 
 ### Swap
 
@@ -328,7 +330,9 @@ Opens the in‑app browser with a DApp from the built‑in catalog. Only **https
 
 See the official TON Connect universal link reference: https://github.com/ton-blockchain/ton-connect/blob/main/bridge.md#universal-link
 
---- \*/}
+---
+
+*/}
 
 ## Standard Reference
 
@@ -338,9 +342,9 @@ The `ton://` scheme is part of the broader TON standard. See https://docs.ton.or
 
 ## Example Workflows
 
-- **Quick Payments** — payment requests from your website; users complete with one tap using any supported scheme.
-- **In‑app Transactions** — deep link from your UI into Tonkeeper’s Send screen with all fields prefilled.
-- **Cross‑Wallet Compatibility** — favor `ton://` when you want other wallets to understand your links.
+-   **Quick Payments** — payment requests from your website; users complete with one tap using any supported scheme.
+-   **In‑app Transactions** — deep link from your UI into Tonkeeper’s Send screen with all fields prefilled.
+-   **Cross‑Wallet Compatibility** — favor `ton://` when you want other wallets to understand your links.
 
 ---
 
