@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import '../App.css'
 import { GROUPS, type TestItem, type TestGroup } from '../data/tests'
 import TestCard from '../components/TestCard'
@@ -104,7 +103,6 @@ export default function TestsPage() {
             </div>
             <button onClick={downloadCsv}>Export CSV</button>
             <button onClick={resetResults}>Reset</button>
-            <Link to="/" style={{ color: '#0366d6', textDecoration: 'underline' }}>Results</Link>
           </div>
         </div>
         <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>

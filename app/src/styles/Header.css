@@ -1,0 +1,119 @@
+.app-header {
+  background-color: var(--bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
+}
+
+.header-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.header-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 0.4rem 0;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.header-link:hover {
+  color: var(--brand);
+}
+
+.header-link.active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+}
+
+/* Burger menu */
+.header-burger {
+  display: none;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-right: -0.5rem;
+}
+
+.header-burger span {
+  width: 24px;
+  height: 2px;
+  background-color: var(--text);
+  transition: all 0.3s ease;
+  border-radius: 1px;
+}
+
+/* Mobile menu */
+@media (max-width: 500px) {
+  .header-burger {
+    display: flex;
+  }
+
+  .header-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    gap: 0;
+    padding: 0.5rem 0;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+
+  .header-links.open {
+    max-height: 200px;
+    opacity: 1;
+  }
+
+  .header-link {
+    padding: 0.75rem 1rem;
+    border-bottom: none;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+    gap: 0;
+  }
+
+  .header-link:hover {
+    background-color: #f9fafb;
+  }
+
+  .header-link.active {
+    border-bottom: none;
+    border-left-color: var(--brand);
+    background-color: #f9fafb;
+    color: var(--brand);
+  }
+}

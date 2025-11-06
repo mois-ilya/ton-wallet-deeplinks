@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { GROUPS } from '../data/tests'
 
 type Status = '' | 'ok' | 'partial' | 'not_ok' | 'unknown'
@@ -200,7 +199,6 @@ export default function ResultsPage() {
       <header style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', padding: '8px 0', borderBottom: '1px solid #eee', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h1 style={{ margin: 0 }}>Compatibility Results</h1>
-          <Link to="/tests" aria-label="Open tests page" style={{ color: '#0366d6' }}>Go to tests</Link>
         </div>
         <p style={{ marginTop: 6, color: '#666', fontSize: 12 }}>Hover over yellow badges (Partial) or info icons to see details</p>
       </header>
