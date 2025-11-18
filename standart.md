@@ -6,7 +6,7 @@ This guide makes the behavior **unambiguous** and **complete**, covering all sup
 
 > **Notation used below**
 >
-> -   `{PREFIX}` means one of the three interchangeable schemes: `ton://` or `https://app.tonkeeper.com/`.
+> -   `{PREFIX}` means one of the three interchangeable schemes: `ton://`, `tonkeeper://` or `https://app.tonkeeper.com/`.
 > -   `{ADDRESS}` means a valid TON recipient address. It can be a raw address or a **TON DNS** name like `example.ton`.
 > -   Unless noted otherwise, **all parameter values must be URL‑encoded**.
 
@@ -17,7 +17,7 @@ This guide makes the behavior **unambiguous** and **complete**, covering all sup
 Tonkeeper supports three interchangeable schemes. Choose any of them depending on your environment:
 
 -   **`ton://`** — TON standard scheme. Recommended for cross‑wallet compatibility.
-    {/_ - **`tonkeeper://`** — custom scheme for direct app deep link on mobile. _/}
+-   **`tonkeeper://`** — custom scheme for direct app deep link on mobile.
 -   **`https://app.tonkeeper.com/`** — web scheme usable from browsers and environments without custom schemes.
 
 All three schemes accept **the same path and query parameters**. You can replace `{PREFIX}` with any of them.
@@ -40,8 +40,8 @@ The following parameters are used across transfer links. Types are given using s
 > **Flow modes**
 > Mode is determined **solely** by whether `amount` is present.
 >
-> -   **Editable (Send screen):** `amount` is **absent**. The user can enter the amount and an optional `text`. `bin`, `exp`, and `init` are not accepted in this mode.
-> -   **Confirmation (non‑editable):** `amount` is **present**. The request is fixed; the user only confirms or cancels. In this mode you may include `text` **or** `bin` (mutually exclusive), `exp`, and (for TON only) `init`.
+> -   **Editable (send-screen):** `amount` is **absent**. The user can enter the amount. `text` is allowed **unless** `bin` is present. May include `bin` and (TON only) `init`; if present in the link, these are **prefilled and locked**. `exp` is **not allowed** in this mode.
+> -   **Non-editable (confirmation-screen):** `amount` is **present**. The request is fixed; the user only confirms or cancels. You may include **either** `text` **or** `bin` (mutually exclusive), `exp`, and (TON only) `init`. **Any link with `exp` is always `confirmation-screen`.**
 
 <br />
 
@@ -50,7 +50,7 @@ The following parameters are used across transfer links. Types are given using s
 | `amount`  | string (integer)                       | TON & Jetton | Optional                          | For **TON**: amount in **nanotons**. For **Jetton**: amount in the token’s **smallest units** (atomic units).                              |
 | `text`    | string (UTF‑8, URL‑encoded)            | TON & Jetton | Optional                          | Transfer comment. **Mutually exclusive with `bin`.**                                                                                       |
 | `bin`     | string (base64 BoC, URL‑encoded)       | TON & Jetton | Optional                          | Binary payload: **TON** — attached as internal message body; **Jetton** — attached as forward payload. **Mutually exclusive with `text`.** |
-| `exp`     | string (UNIX seconds)                  | TON & Jetton | Optional                          | Valid‑until timestamp; **reject if current time > `exp`**.                                                                                 |
+| `exp`     | string (UNIX seconds)                  | TON & Jetton | Optional                          | Valid‑until timestamp; **reject if current time >.`exp`**. **requires `amount`**; links with `exp` are not editable.                       |
 | `init`    | string (StateInit base64, URL‑encoded) | TON only     | Optional                          | Adds **StateInit** to the message. **Not allowed in Jetton transfers.**                                                                    |
 | `jetton`  | string (jetton master address)         | Jetton only  | **Required for jetton transfers** | Presence switches the flow to **Jetton transfer**.                                                                                         |
 
@@ -60,12 +60,18 @@ The following parameters are used across transfer links. Types are given using s
 
 ### 1) Open Transfer Screen
 
-Opens the prefilled Send screen. Any missing data can be entered by the user.
+Opens the prefilled send-screen. Any missing data can be entered by the user.
 
 **Format**
 
 ```text
-{PREFIX}transfer/{ADDRESS}?amount={AMOUNT}&text={TEXT}
+# send-screen (no amount)
+{PREFIX}transfer/{ADDRESS}
+{PREFIX}transfer/{ADDRESS}?text={TEXT}
+
+# To open confirmation-screen, include amount:
+{PREFIX}transfer/{ADDRESS}?amount={AMOUNT}[&text={TEXT}]
+
 ```
 
 **Examples**
@@ -77,7 +83,7 @@ ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh
 # Address + text (editable)
 ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?text=test
 
-# Address + amount (1 nanotons)
+# Address + amount (1 nanoton)
 ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1
 
 # Address + amount + text
@@ -94,14 +100,16 @@ Opens the emulation screen or a blind‑signing warning. The payload is attached
 **Rules**
 
 -   `bin` must be a **URL‑encoded base64 BoC**.
--   `amount` is **required** when `bin` is present.
 -   `text` **must not** be combined with `bin`.
--   Links with `bin` are **non-editable** (confirmation screen only).
 
 **Format**
 
 ```text
+# with amount - confirmation-screen
 {PREFIX}transfer/{ADDRESS}?amount={AMOUNT}&bin={BINARY_DATA}
+
+# without amount - send-screen
+{PREFIX}transfer/{ADDRESS}?bin={BINARY_DATA}
 ```
 
 **Examples**
@@ -111,7 +119,7 @@ Opens the emulation screen or a blind‑signing warning. The payload is attached
 ton://transfer/UQCae11h9N5znylEPRjmuLYGvIwnxkcCw4zVW4BJjVASi5eL?amount=1&bin=te6cckEBAQEACQAADgAAAABiaW793PSE
 
 # Invalid: text + bin (must be rejected)
-ton://transfer/UQCae11h9N5znylEPRjmuLYGvIwnxkcCw4zVW4BJjVASi5eL?amount=1&text=test&bin=invalid_bin_value
+ton://transfer/UQCae11h9N5znylEPRjmuLYGvIwnxkcCw4zVW4BJjVASi5eL?amount=1&text=test&bin=te6cckEBAQEACQAADgAAAABiaW793PSE
 ```
 
 ### 3) Expiry Timestamp (`exp`)
@@ -122,7 +130,7 @@ ton://transfer/UQCae11h9N5znylEPRjmuLYGvIwnxkcCw4zVW4BJjVASi5eL?amount=1&text=te
 -   `exp` is a UNIX timestamp in **seconds**.
 -   Clients must **reject** expired transactions.
 -   Can be combined with any valid combination (e.g., `text`, `bin`, `init`).
--   Links with `exp` are **non-editable** (confirmation screen only).
+-   Links with `exp` are **non editable** (confirmation-screen only).
 
 **How `exp` works**
 
@@ -143,13 +151,13 @@ Ensures the transaction is only valid until a given time. When using `exp`, cert
 
 ```text
 # Valid until exp
-ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&exp=4294967296000
+ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&exp=4102444800
 
 # Amount + text + exp
-ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&text=test&exp=4294967296000
+ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&text=test&exp=4102444800
 
 # Bin + exp
-ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&bin=te6cckEBAQEACQAADgAAAABiaW793PSE&exp=4294967296000
+ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&bin=te6cckEBAQEACQAADgAAAABiaW793PSE&exp=4102444800
 
 # Expired (must be rejected)
 ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&exp=174000000
@@ -163,8 +171,6 @@ Adds a **StateInit** cell to the message.
 
 -   `init` must be a URL‑encoded base64 StateInit.
 -   Can be combined with `text`, `exp`, and `bin`.
--   `amount` is **required** when `init` is present.
--   Links with `init` are **non-editable** (confirmation screen only).
 
 **Examples**
 
@@ -186,7 +192,7 @@ ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&init=te
 
 ## Transfer Jetton
 
-Opens the Send screen for a **jetton** transfer. All rules about `text`, `bin`, and `exp` from the TON section apply here too.
+Opens the send-screen for a **jetton** transfer. All rules about `text`, `bin`, and `exp` from the TON section apply here too.
 
 **Format**
 
@@ -198,6 +204,9 @@ Opens the Send screen for a **jetton** transfer. All rules about `text`, `bin`, 
 
 -   `jetton` — **required** jetton master address.
 -   `amount` — amount of **jettons in the token’s smallest units** (atomic units). May be omitted; user can fill the amount manually.
+-   `text` and `bin` are mutually exclusive.
+-   `exp` requires `amount` and implies `confirmation-screen`.
+-   `init` is **not allowed** for Jetton transfers.
 
 **Examples**
 
@@ -236,14 +245,12 @@ ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?jetton=EQCxE6mUt
 
 Clients SHOULD validate and handle the following cases:
 
--   `amount` missing **when `bin` is present** → reject.
 -   `exp` without `amount` → reject.
 -   `text` + `bin` together → reject.
 -   `amount` must be a non‑negative integer. `0` is allowed but may be rejected by UX policy; in most cases a **positive** value is expected.
 -   `exp` must be a valid UNIX timestamp (seconds). When current time > `exp` → reject.
 -   `bin` must be a valid URL‑encoded base64 BoC → otherwise reject.
 -   `init` must be valid URL‑encoded base64 StateInit → otherwise reject.
--   `init` without `amount` → reject.
 -   `jetton` with any `init` → reject.
 -   DNS address that cannot be resolved → reject.
 -   Duplicate parameters → reject.
@@ -255,7 +262,7 @@ Clients SHOULD validate and handle the following cases:
 
 ---
 
-{/*
+<!--
 
 ## Other Deep Links
 
@@ -332,7 +339,7 @@ See the official TON Connect universal link reference: https://github.com/ton-bl
 
 ---
 
-*/}
+-->
 
 ## Standard Reference
 
@@ -343,66 +350,80 @@ The `ton://` scheme is part of the broader TON standard. See https://docs.ton.or
 ## Example Workflows
 
 -   **Quick Payments** — payment requests from your website; users complete with one tap using any supported scheme.
--   **In‑app Transactions** — deep link from your UI into Tonkeeper’s Send screen with all fields prefilled.
+-   **In‑app Transactions** — deep link from your UI into Tonkeeper’s send-screen with all fields prefilled.
 -   **Cross‑Wallet Compatibility** — favor `ton://` when you want other wallets to understand your links.
 
 ---
 
 ## Compatibility Matrix (Allowed combinations)
 
-**TON Transfer**
+**Legend**
 
-| Combination                         | Allowed? | Notes                                                                               |
-| ----------------------------------- | :------: | ----------------------------------------------------------------------------------- |
-| `address-only`                      |    ✅    | Opens Send screen; user can enter amount and optional comment.                      |
-| `amount`                            |    ✅    | Confirmation screen; non‑editable.                                                  |
-| `dns+amount`                        |    ✅    | Confirmation screen; DNS is resolved first.                                         |
-| `text`                              |    ✅    | Without `amount`.                                                                   |
-| `bin`                               |    ❌    | Use `bin` **with** `amount`.                                                        |
-| `amount+bin`                        |    ✅    | Shows emulation/blind‑signing prompt; attaches BoC as body.                         |
-| `amount+text`                       |    ✅    | Commented transfer.                                                                 |
-| `amount+exp`                        |    ✅    | Valid until `exp`. Expired → rejection.                                             |
-| `amount+exp (expired)`              |    ❌    | Current time > `exp` → reject.                                                      |
-| `amount+text+exp`                   |    ✅    | Commented transfer valid until `exp`.                                               |
-| `amount+bin+exp`                    |    ✅    | Valid until `exp`.                                                                  |
-| `amount+text+bin`                   |    ❌    | `text` and `bin` are mutually exclusive.                                            |
-| `text+exp`                          |    ❌    | Requires `amount`.                                                                  |
-| `amount+init`                       |    ✅    | Message carries StateInit.                                                          |
-| `amount+init+text`                  |    ✅    | Comment + StateInit.                                                                |
-| `amount+init+bin`                   |    ✅    | Payload via `bin` + StateInit.                                                      |
-| `amount+init+exp`                   |    ✅    | Valid until `exp`.                                                                  |
-| `amount+init+bin+exp`               |    ✅    | Valid until `exp`.                                                                  |
-| `init`                              |    ❌    | Requires `amount`.                                                                  |
-| `init+text`                         |    ❌    | Requires `amount`.                                                                  |
-| `init+bin`                          |    ❌    | Requires `amount`.                                                                  |
-| `init+exp`                          |    ❌    | Requires `amount`.                                                                  |
-| `ton+unknown-param`                 |    ❌    | Any unknown parameter must be rejected (see Validation).                            |
-| `amount (invalid format)`           |    ❌    | `amount` must be a non‑negative integer (e.g., `1`); reject malformed like `1,0a+`. |
-| `amount+bin (invalid bin format)`   |    ❌    | `bin` must be URL‑encoded base64 BoC; reject invalid values.                        |
-| `amount+exp (invalid exp format)`   |    ❌    | `exp` must be UNIX seconds integer; reject non‑numbers like `12ab-`.                |
-| `amount+init (invalid init format)` |    ❌    | `init` must be URL‑encoded base64 StateInit; reject values like `not-a-boc`.        |
+-   **Screen:** `send-screen` (нет `amount`), `confirmation-screen` (есть `amount`).
+-   **Fields (from link → state):** `A`=amount, `T`=text, `B`=bin, `I`=init, `E`=exp, `J`=jetton.
+    Индикаторы: **✏️** — prefilled & editable, **🔒** — prefilled & locked. (Параметры, которых **нет в ссылке**, не перечисляются.)
+-   **Правила (шорткоды):**
+    **E→A** — `exp` требует `amount` и всегда даёт `confirmation-screen`;
+    **T≠B** — `text` и `bin` взаимоисключаемы (при `B` комментарий недоступен);
+    **I✖J** — `init` недопустим в Jetton‑переводах;
+    **DNS†** — DNS‑имена резолвятся до показа экрана.
 
-**Jetton Transfer**
+### TON Transfer
 
-| Combination                   | Allowed? | Notes                                                                           |
-| ----------------------------- | :------: | ------------------------------------------------------------------------------- |
-| `jetton`                      |    ✅    | Opens Jetton transfer screen. `amount` may be omitted (user fills in).          |
-| `jetton+amount`               |    ✅    | Amount in **token’s smallest units**.                                           |
-| `jetton+text`                 |    ✅    | Without `amount`.                                                               |
-| `jetton+bin`                  |    ❌    | Requires `amount`.                                                              |
-| `jetton+exp`                  |    ❌    | Requires `amount`.                                                              |
-| `jetton+dns`                  |    ✅    | Editable; user can enter amount.                                                |
-| `jetton+dns+amount`           |    ✅    | Confirmation screen; DNS is resolved first.                                     |
-| `jetton+init`                 |    ❌    | StateInit is not allowed for Jetton transfers.                                  |
-| `jetton+amount+text`          |    ✅    | Commented jetton transfer.                                                      |
-| `jetton+amount+bin`           |    ✅    | Blind‑signing/emulation with BoC + jetton. Attaches BoC as the forward payload. |
-| `jetton+amount+exp`           |    ✅    | Valid until `exp`.                                                              |
-| `jetton+amount+exp (expired)` |    ❌    | Current time > `exp` → reject.                                                  |
-| `jetton+amount+bin+exp`       |    ✅    | Valid until `exp`. Attaches BoC as the forward payload.                         |
-| `jetton+amount+text+bin`      |    ❌    | `text` and `bin` are mutually exclusive.                                        |
-| `jetton+amount+init`          |    ❌    | StateInit is not allowed for Jetton transfers.                                  |
-| `jetton+unknown-param`        |    ❌    | Any unknown parameter must be rejected (see Validation).                        |
-| `jetton (invalid address)`    |    ❌    | `jetton` must be a valid jetton master address; reject invalid values.          |
+| Combination                         | Allowed? | Screen                | Fields (from link → state) | Notes     |
+| ----------------------------------- | :------: | --------------------- | -------------------------- | --------- |
+| `address-only`                      |    ✅    | `send-screen`         | —                          | —         |
+| `amount`                            |    ✅    | `confirmation-screen` | A🔒                        | —         |
+| `dns+amount`                        |    ✅    | `confirmation-screen` | A🔒                        | DNS†      |
+| `text`                              |    ✅    | `send-screen`         | T✏️                        | —         |
+| `bin`                               |    ✅    | `send-screen`         | B🔒                        | T≠B       |
+| `amount+bin`                        |    ✅    | `confirmation-screen` | A🔒, B🔒                   | —         |
+| `exp`                               |    ❌    | —                     | —                          | E→A       |
+| `amount+text`                       |    ✅    | `confirmation-screen` | A🔒, T🔒                   | —         |
+| `amount+exp`                        |    ✅    | `confirmation-screen` | A🔒, E🔒                   | —         |
+| `amount+exp (expired)`              |    ❌    | —                     | —                          | expired   |
+| `amount+text+exp`                   |    ✅    | `confirmation-screen` | A🔒, T🔒, E🔒              | —         |
+| `amount+bin+exp`                    |    ✅    | `confirmation-screen` | A🔒, B🔒, E🔒              | —         |
+| `amount+text+bin`                   |    ❌    | —                     | —                          | T≠B       |
+| `text+exp`                          |    ❌    | —                     | —                          | E→A       |
+| `init`                              |    ✅    | `send-screen`         | I🔒                        | —         |
+| `amount+init`                       |    ✅    | `confirmation-screen` | A🔒, I🔒                   | —         |
+| `amount+init+text`                  |    ✅    | `confirmation-screen` | A🔒, I🔒, T🔒              | —         |
+| `amount+init+bin`                   |    ✅    | `confirmation-screen` | A🔒, I🔒, B🔒              | T≠B       |
+| `amount+init+exp`                   |    ✅    | `confirmation-screen` | A🔒, I🔒, E🔒              | —         |
+| `amount+init+bin+exp`               |    ✅    | `confirmation-screen` | A🔒, I🔒, B🔒, E🔒         | T≠B       |
+| `init+text`                         |    ✅    | `send-screen`         | I🔒, T✏️                   | —         |
+| `init+bin`                          |    ✅    | `send-screen`         | I🔒, B🔒                   | T≠B       |
+| `init+exp`                          |    ❌    | —                     | —                          | E→A       |
+| `ton+unknown-param`                 |    ❌    | —                     | —                          | unknown   |
+| `amount (invalid format)`           |    ❌    | —                     | —                          | invalid A |
+| `amount+bin (invalid bin format)`   |    ❌    | —                     | —                          | invalid B |
+| `amount+exp (invalid exp format)`   |    ❌    | —                     | —                          | invalid E |
+| `amount+init (invalid init format)` |    ❌    | —                     | —                          | invalid I |
+
+---
+
+### Jetton Transfer
+
+| Combination                   | Allowed? | Screen                | Fields (from link → state) | Notes     |
+| ----------------------------- | :------: | --------------------- | -------------------------- | --------- |
+| `jetton`                      |    ✅    | `send-screen`         | J🔒                        | —         |
+| `jetton+amount`               |    ✅    | `confirmation-screen` | J🔒, A🔒                   | —         |
+| `jetton+text`                 |    ✅    | `send-screen`         | J🔒, T✏️                   | —         |
+| `jetton+bin`                  |    ✅    | `send-screen`         | J🔒, B🔒                   | T≠B       |
+| `jetton+exp`                  |    ❌    | —                     | —                          | E→A       |
+| `jetton+dns`                  |    ✅    | `send-screen`         | J🔒                        | DNS†      |
+| `jetton+dns+amount`           |    ✅    | `confirmation-screen` | J🔒, A🔒                   | DNS†      |
+| `jetton+init`                 |    ❌    | —                     | —                          | I✖J       |
+| `jetton+amount+text`          |    ✅    | `confirmation-screen` | J🔒, A🔒, T🔒              | —         |
+| `jetton+amount+bin`           |    ✅    | `confirmation-screen` | J🔒, A🔒, B🔒              | —         |
+| `jetton+amount+exp`           |    ✅    | `confirmation-screen` | J🔒, A🔒, E🔒              | —         |
+| `jetton+amount+exp (expired)` |    ❌    | —                     | —                          | expired   |
+| `jetton+amount+bin+exp`       |    ✅    | `confirmation-screen` | J🔒, A🔒, B🔒, E🔒         | —         |
+| `jetton+amount+text+bin`      |    ❌    | —                     | —                          | T≠B       |
+| `jetton+amount+init`          |    ❌    | —                     | —                          | I✖J       |
+| `jetton+unknown-param`        |    ❌    | —                     | —                          | unknown   |
+| `jetton (invalid address)`    |    ❌    | —                     | —                          | invalid J |
 
 > **Note on Jetton `amount`**
 > The `amount` for jettons represents the **token balance units** (atomic units). For display Tonkeeper converts using the token’s decimals.
