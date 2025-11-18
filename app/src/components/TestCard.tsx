@@ -21,7 +21,32 @@ type Props = {
 
 export default function TestCard({ item, scheme, address, bin, dns, init, initValid = true, binValid = true, expValue, result, onChange }: Props) {
   const [showQr, setShowQr] = useState(false);
+
+  // Per-test exp activation state
+  const [armed, setArmed] = useState(false);
+  const [armedAt, setArmedAt] = useState<number | null>(null);
+  const [localExpValue, setLocalExpValue] = useState<number>(0);
+
   const prefix = scheme === 'https' ? 'https://app.tonkeeper.com/' : scheme + '://';
+
+  // Determine exp mode
+  const isStaticExp = item.expMode === 'static';
+  const isDynamicExp = item.expMode === 'dynamic';
+  const hasExp = isStaticExp || isDynamicExp;
+  const expDuration = item.expDuration || 30;
+
+  // For static exp: parse from template; for dynamic: use localExpValue
+  const effectiveExp = useMemo(() => {
+    if (isStaticExp) {
+      // Parse static exp from linkTemplate
+      const staticMatch = item.linkTemplate.match(/exp=(\d+)/);
+      return staticMatch ? parseInt(staticMatch[1], 10) : 0;
+    } else if (isDynamicExp) {
+      return localExpValue;
+    }
+    return 0;
+  }, [isStaticExp, isDynamicExp, item.linkTemplate, localExpValue]);
+
   const link = useMemo(() => {
     const processedLink = item.linkTemplate
       .replace('{PREFIX}', prefix)
@@ -29,36 +54,60 @@ export default function TestCard({ item, scheme, address, bin, dns, init, initVa
       .replace('{BIN}', bin)
       .replace('{DNS}', dns)
       .replace('{INIT}', init)
-      .replace('{EXP}', String(expValue));
-    
+      .replace('{EXP}', String(effectiveExp));
+
     return processedLink;
-  }, [item.linkTemplate, prefix, address, bin, dns, init, expValue]);
+  }, [item.linkTemplate, prefix, address, bin, dns, init, effectiveExp]);
 
   const usesInitPlaceholder = item.linkTemplate.includes('{INIT}');
   const usesBinPlaceholder = item.linkTemplate.includes('{BIN}');
   const disabledDueToInit = usesInitPlaceholder && !initValid;
   const disabledDueToBin = usesBinPlaceholder && !binValid;
-  const disabled = disabledDueToInit || disabledDueToBin;
+  const disabledDueToDynamic = isDynamicExp && !armed;
+  const disabled = disabledDueToInit || disabledDueToBin || disabledDueToDynamic;
 
   const parsedInit = useMemo(() => (usesInitPlaceholder && initValid ? parseInit(init) : null), [usesInitPlaceholder, initValid, init]);
 
-  // Expiration helpers
-  const hasExp = item.linkTemplate.includes('{EXP}') || item.linkTemplate.includes('exp=');
-  const usesExpPlaceholder = item.linkTemplate.includes('{EXP}');
-  // If template uses {EXP}, use dynamic value; otherwise parse static value from built link
-  const staticExpMatch = !usesExpPlaceholder ? link.match(/exp=(\d+)/) : null;
-  const effectiveExp = usesExpPlaceholder ? expValue : (staticExpMatch ? parseInt(staticExpMatch[1], 10) : expValue);
   const remainingSec = Math.max(0, effectiveExp - Math.floor(Date.now() / 1000));
 
-  // Rerender every second for items with exp to update remaining seconds
+  // Arm dynamic exp test
+  function armTest() {
+    const now = Math.floor(Date.now() / 1000);
+    setArmedAt(now);
+    setLocalExpValue(now + expDuration);
+    setArmed(true);
+  }
+
+  // Timer for dynamic exp: update countdown and check expiration
   useEffect(() => {
-    if (!hasExp) return;
-    const t = setInterval(() => {
-      // force re-render
-      setShowQr((v) => v);
+    if (!isDynamicExp || !armed || !armedAt) return;
+
+    const timer = setInterval(() => {
+      const now = Math.floor(Date.now() / 1000);
+      const expiresAt = armedAt + expDuration;
+
+      if (now >= expiresAt) {
+        // Expired - disarm
+        setArmed(false);
+        setArmedAt(null);
+        setLocalExpValue(0);
+      } else {
+        // Update exp value
+        setLocalExpValue(expiresAt);
+      }
     }, 1000);
-    return () => clearInterval(t);
-  }, [hasExp]);
+
+    return () => clearInterval(timer);
+  }, [isDynamicExp, armed, armedAt, expDuration]);
+
+  // Timer for static exp: just update countdown display
+  useEffect(() => {
+    if (!isStaticExp) return;
+    const timer = setInterval(() => {
+      setShowQr((v) => v); // force re-render
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isStaticExp]);
 
   const status = result?.status ?? null;
   const note = result?.note ?? '';
@@ -110,7 +159,17 @@ export default function TestCard({ item, scheme, address, bin, dns, init, initVa
               padding: '2px 8px'
             }}>{item.editable ? 'Editable' : 'Non-editable'}</span>
           )}
-          {hasExp && (
+          {isDynamicExp && (
+            <span style={{
+              background: armed ? '#e6ffe6' : '#f5f5f5',
+              color: armed ? '#006600' : '#666',
+              border: `1px solid ${armed ? '#91ff91' : '#ddd'}`,
+              borderRadius: 12,
+              fontSize: 12,
+              padding: '2px 8px'
+            }}>{armed ? `Armed: ${remainingSec}s` : 'Not armed'}</span>
+          )}
+          {hasExp && armed && (
             <span style={{
               background: '#fff7e6',
               color: '#ad6800',
@@ -120,11 +179,27 @@ export default function TestCard({ item, scheme, address, bin, dns, init, initVa
               padding: '2px 8px'
             }}>expires in: {remainingSec}s</span>
           )}
+          {isStaticExp && (
+            <span style={{
+              background: '#fff7e6',
+              color: '#ad6800',
+              border: '1px solid #ffd591',
+              borderRadius: 12,
+              fontSize: 12,
+              padding: '2px 8px'
+            }}>static exp: {remainingSec}s</span>
+          )}
         </div>
         <div style={{ display: 'flex', gap: 6, justifySelf: 'end' }}>
-          <button onClick={openLink} disabled={disabled} aria-disabled={disabled}>Open</button>
-          <button onClick={copyLink} disabled={disabled} aria-disabled={disabled}>Copy</button>
-          <button onClick={() => setShowQr((v) => !v)} disabled={disabled} aria-disabled={disabled}>QR</button>
+          {isDynamicExp && !armed ? (
+            <button onClick={armTest}>Arm ({expDuration}s)</button>
+          ) : (
+            <>
+              <button onClick={openLink} disabled={disabled} aria-disabled={disabled}>Open</button>
+              <button onClick={copyLink} disabled={disabled} aria-disabled={disabled}>Copy</button>
+              <button onClick={() => setShowQr((v) => !v)} disabled={disabled} aria-disabled={disabled}>QR</button>
+            </>
+          )}
         </div>
         <a
           href={link}
@@ -151,6 +226,7 @@ export default function TestCard({ item, scheme, address, bin, dns, init, initVa
           disabled: {[
             disabledDueToInit ? 'invalid init' : null,
             disabledDueToBin ? 'invalid bin' : null,
+            disabledDueToDynamic ? 'not armed (click Arm button)' : null,
           ].filter(Boolean).join(', ')}
         </div>
       )}

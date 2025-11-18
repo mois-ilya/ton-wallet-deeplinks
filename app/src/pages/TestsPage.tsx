@@ -25,16 +25,6 @@ export default function TestsPage() {
   const isInitValid = useMemo(() => isValidStateInit(init), [init])
   const isBinValid = useMemo(() => isValidBoc(bin), [bin])
   const isAddressValid = useMemo(() => isLikelyValidAddress(address), [address])
-  
-  // exp offset (seconds into the future)
-  const [expOffsetSec, setExpOffsetSec] = useState<number>(() => {
-    const saved = localStorage.getItem('deeplinks-stand-expOffsetSec')
-    return saved ? Math.max(1, parseInt(saved, 10) || 30) : 30
-  })
-
-  // Dynamic exp parameter: 30 seconds in future, updates every 10 seconds
-  const [expValue, setExpValue] = useState<number>(() => Math.floor(Date.now() / 1000) + (localStorage.getItem('deeplinks-stand-expOffsetSec') ? Math.max(1, parseInt(localStorage.getItem('deeplinks-stand-expOffsetSec') as string, 10) || 30) : 30))
-  const [countdown, setCountdown] = useState<number>(10)
 
   useEffect(() => {
     saveResults(results)
@@ -45,28 +35,8 @@ export default function TestsPage() {
   }, [address])
 
   useEffect(() => {
-    localStorage.setItem('deeplinks-stand-expOffsetSec', String(expOffsetSec))
-    // Recompute exp immediately when offset changes and reset countdown
-    setExpValue(Math.floor(Date.now() / 1000) + expOffsetSec)
-    setCountdown(10)
-  }, [expOffsetSec])
-
-  // Timer for exp updates and countdown
-  useEffect(() => {
     document.title = 'TON Wallets Deep Links Tester – Tests'
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          // Reset countdown and update exp
-          setExpValue(Math.floor(Date.now() / 1000) + expOffsetSec)
-          return 10
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [expOffsetSec])
+  }, [])
 
   function updateResult(testId: string, next: { status: 'ok' | 'partial' | 'not_ok' | null; note: string }) {
     setResults((prev) => ({ ...prev, [testId]: { testId, ...next } }))
@@ -78,7 +48,7 @@ export default function TestsPage() {
   }
 
   const allTests = useMemo(() => GROUPS.flatMap((g) => g.items), [])
-  const csv = useMemo(() => buildCsv(allTests, results, scheme, expValue, address, bin, dns, init), [results, scheme, expValue, address, bin, dns, init, allTests])
+  const csv = useMemo(() => buildCsv(allTests, results, scheme, address, bin, dns, init), [results, scheme, address, bin, dns, init, allTests])
 
   function downloadCsv() {
     const now = new Date().toISOString().replace(/[:]/g, '-')
@@ -98,9 +68,6 @@ export default function TestsPage() {
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ fontWeight: 800, fontSize: 20, letterSpacing: 0.2 }}>TON Wallets Deep Links Tester</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ fontSize: 14, color: '#666' }}>
-              exp updates in: {countdown}s
-            </div>
             <button onClick={downloadCsv}>Export CSV</button>
             <button onClick={resetResults}>Reset</button>
           </div>
@@ -122,16 +89,6 @@ export default function TestsPage() {
               <option value="tonkeeper">tonkeeper://</option>
               <option value="https">https://app.tonkeeper.com/</option>
             </select>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap' }}>
-            <label>exp offset (s):</label>
-            <input
-              type="number"
-              min={1}
-              value={expOffsetSec}
-              onChange={(e) => setExpOffsetSec(Math.max(1, Number(e.target.value) || 1))}
-              style={{ width: 110, padding: 6 }}
-            />
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', whiteSpace: 'nowrap', flex: '2 1 480px' }}>
             <label>bin:</label>
@@ -157,7 +114,7 @@ export default function TestsPage() {
               <summary style={{ fontWeight: 700, cursor: 'pointer' }}>{g.title}</summary>
               <div style={{ marginTop: 8 }}>
                 {g.items.map((t: TestItem) => (
-                  <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} binValid={isBinValid} expValue={expValue} result={results[t.id]} onChange={updateResult} />
+                  <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} binValid={isBinValid} expValue={0} result={results[t.id]} onChange={updateResult} />
                 ))}
               </div>
             </details>
@@ -165,7 +122,7 @@ export default function TestsPage() {
             <>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>{g.title}</div>
               {g.items.map((t: TestItem) => (
-                <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} binValid={isBinValid} expValue={expValue} result={results[t.id]} onChange={updateResult} />
+                <TestCard key={t.id} item={t} scheme={scheme} address={address} bin={bin} dns={dns} init={init} initValid={isInitValid} binValid={isBinValid} expValue={0} result={results[t.id]} onChange={updateResult} />
               ))}
             </>
           )}
