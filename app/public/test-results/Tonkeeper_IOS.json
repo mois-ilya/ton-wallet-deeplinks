@@ -1,0 +1,273 @@
+{
+  "exportDate": "2025-11-18T13:55:45.063Z",
+  "scheme": "ton",
+  "wallet": "Tonkeeper IOS",
+  "testResults": [
+    {
+      "testId": "ton-address-only",
+      "title": "Address only (user picks amount)",
+      "status": "ok",
+      "note": "Кажется менятьадрес назначения должно быть нельзя",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-text-only",
+      "title": "Text only",
+      "status": "ok",
+      "note": "Кажется менять коммент или адрес назначения должно быть нельзя",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount",
+      "title": "Amount",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-text",
+      "title": "Amount + text",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-dns-amount",
+      "title": "DNS address + amount",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-bin",
+      "title": "Amount + bin",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-text-bin-invalid",
+      "title": "Text + bin (invalid)",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-bin-no-amount-invalid",
+      "title": "bin without amount (invalid)",
+      "status": "not_ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-exp",
+      "title": "Amount + exp",
+      "status": "not_ok",
+      "note": "30 секунд в будущем почему то не валидная ссылка (на много в будущее - валидно)",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-text-exp",
+      "title": "Amount + text + exp",
+      "status": "not_ok",
+      "note": "30 секунд в будущем почему то не валидная ссылка (на много в будущее - валидно)",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-text-exp",
+      "title": "Text + exp (no amount)",
+      "status": "not_ok",
+      "note": "Кажется Exp не будет использован, тесткейс невалиден?",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-bin-exp",
+      "title": "Amount + bin + exp",
+      "status": "not_ok",
+      "note": "30 секунд в будущем почему то не валидная ссылка (на много в будущее - валидно)",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-expired",
+      "title": "Expired (invalid)",
+      "status": "not_ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-init",
+      "title": "Amount + init",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-init-text",
+      "title": "Amount + init + text",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-init-bin",
+      "title": "Amount + init + bin",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-init-bin-exp",
+      "title": "Amount + init + bin + exp",
+      "status": "not_ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "ton-amount-init-exp",
+      "title": "Amount + init + exp",
+      "status": "not_ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-only",
+      "title": "Jetton master only",
+      "status": "ok",
+      "note": "Кажется менять адрес назначения должно быть нельзя",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-text-only",
+      "title": "Jetton + text (no amount)",
+      "status": "ok",
+      "note": "Кажется менять коммент или адрес назначения должно быть нельзя",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-amount",
+      "title": "Jetton + amount",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-amount-text",
+      "title": "Jetton + amount + text",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-amount-bin",
+      "title": "Jetton + amount + bin",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-amount-exp",
+      "title": "Jetton + amount + exp",
+      "status": "not_ok",
+      "note": "30 секунд в будущем почему то не валидная ссылка (на много в будущее - валидно)",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-exp",
+      "title": "Jetton + exp (no amount)",
+      "status": "not_ok",
+      "note": "Кажется Exp не будет использован, тесткейс невалиден?",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-bin-no-amount-invalid",
+      "title": "Jetton + bin without amount (invalid)",
+      "status": "not_ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-text-bin-invalid",
+      "title": "Jetton + text + bin (invalid)",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-expired",
+      "title": "Jetton expired (invalid)",
+      "status": "not_ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-dns",
+      "title": "Jetton + DNS address",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "jetton-amount-bin-exp",
+      "title": "Jetton + amount + bin + exp",
+      "status": "not_ok",
+      "note": "30 секунд в будущем почему то не валидная ссылка (на много в будущее - валидно)",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "buy-ton",
+      "title": "Buy TON",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "staking",
+      "title": "Staking",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "exchange-provider",
+      "title": "Exchange (provider only)",
+      "status": "not_ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "exchange-provider-toToken",
+      "title": "Exchange (provider + toToken)",
+      "status": "not_ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "swap",
+      "title": "Swap from TON to USDT",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "battery",
+      "title": "Battery (with promocode)",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "action",
+      "title": "Action (eventId)",
+      "status": "not_ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.063Z"
+    },
+    {
+      "testId": "dapp",
+      "title": "DApp (catalog) https URL",
+      "status": "ok",
+      "note": "",
+      "testedAt": "2025-11-18T13:55:45.064Z"
+    }
+  ]
+}

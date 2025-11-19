@@ -1,6 +1,6 @@
-# Deep Linking into Tonkeeper — Complete Guide
+# TON Wallet Deep Links — Complete Standard (Draft)
 
-Your application might operate outside of Tonkeeper, like a website or a mobile app. Deep links let you open a specific screen or execute a specific action inside the Tonkeeper app with all the parameters prefilled.
+Deep links allow your application (website or mobile app) to open specific screens or execute actions inside TON wallets with all parameters prefilled. This standard defines the behavior for transfer deep links across all TON wallet implementations.
 
 This guide makes the behavior **unambiguous** and **complete**, covering all supported parameters and their combinations for TON and Jetton transfers. It also documents validation rules and common errors.
 
@@ -359,14 +359,14 @@ The `ton://` scheme is part of the broader TON standard. See https://docs.ton.or
 
 **Legend**
 
--   **Screen:** `send-screen` (нет `amount`), `confirmation-screen` (есть `amount`).
+-   **Screen:** `send-screen` (no `amount`), `confirmation-screen` (`amount` present).
 -   **Fields (from link → state):** `A`=amount, `T`=text, `B`=bin, `I`=init, `E`=exp, `J`=jetton.
-    Индикаторы: **✏️** — prefilled & editable, **🔒** — prefilled & locked. (Параметры, которых **нет в ссылке**, не перечисляются.)
--   **Правила (шорткоды):**
-    **E→A** — `exp` требует `amount` и всегда даёт `confirmation-screen`;
-    **T≠B** — `text` и `bin` взаимоисключаемы (при `B` комментарий недоступен);
-    **I✖J** — `init` недопустим в Jetton‑переводах;
-    **DNS†** — DNS‑имена резолвятся до показа экрана.
+    Indicators: **✏️** — prefilled & editable, **🔒** — prefilled & locked. (Parameters not in the link are not listed.)
+-   **Rules (shortcuts):**
+    **E→A** — `exp` requires `amount` and always yields `confirmation-screen`;
+    **T≠B** — `text` and `bin` are mutually exclusive (when `B` is present, comment is unavailable);
+    **I✖J** — `init` is not allowed in Jetton transfers;
+    **DNS†** — DNS names are resolved before showing the screen.
 
 ### TON Transfer
 

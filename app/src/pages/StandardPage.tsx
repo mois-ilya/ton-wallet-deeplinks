@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
+import 'github-markdown-css/github-markdown-light.css'
 import '../styles/StandardPage.css'
 
 export default function StandardPage() {
@@ -11,13 +13,15 @@ export default function StandardPage() {
   useEffect(() => {
     document.title = 'TON Wallets Deep Links Tester – Standard'
 
-    fetch('/ton-wallet-deeplinks/standart.md')
+    fetch(import.meta.env.BASE_URL + 'standart.md')
       .then(res => {
         if (!res.ok) throw new Error(`Failed to load: ${res.statusText}`)
         return res.text()
       })
       .then(text => {
-        setContent(text)
+        // Remove HTML comments
+        const cleanedText = text.replace(/<!--[\s\S]*?-->/g, '')
+        setContent(cleanedText)
         setLoading(false)
       })
       .catch(err => {
@@ -27,13 +31,14 @@ export default function StandardPage() {
   }, [])
 
   return (
-    <div className="standard-page-content">
+    <div className="max-w-6xl mx-auto px-4 py-4 standard-page-wrapper">
       {loading && <p>Loading standard...</p>}
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {error && <p className="text-red-600">Error: {error}</p>}
       {content && (
         <div className="markdown-body">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
           >
             {content}
           </ReactMarkdown>
