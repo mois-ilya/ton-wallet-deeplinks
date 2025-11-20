@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import ResultsPage from './pages/ResultsPage'
 import TestsPage from './pages/TestsPage'
 import StandardPage from './pages/StandardPage'
+import ParserPage from './pages/ParserPage'
 
 export default function App() {
   return (
@@ -11,6 +12,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<ResultsPage />} />
           <Route path="/tests" element={<TestsPage />} />
+          <Route path="/parser" element={<ParserPage />} />
           <Route path="/standard" element={<StandardPage />} />
         </Route>
       </Routes>

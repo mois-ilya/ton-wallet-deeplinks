@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { BarChart3, FlaskConical, FileText, Menu } from 'lucide-react'
+import { BarChart3, FlaskConical, FileText, Menu, Code2 } from 'lucide-react'
 import { Button } from './ui/button'
 
 export default function Layout() {
@@ -12,6 +12,7 @@ export default function Layout() {
   const navItems = [
     { path: '/', label: 'Results', icon: BarChart3 },
     { path: '/tests', label: 'Tests', icon: FlaskConical },
+    { path: '/parser', label: 'Parser', icon: Code2 },
     { path: '/standard', label: 'Standard', icon: FileText },
   ]
 

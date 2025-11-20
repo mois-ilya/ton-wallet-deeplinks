@@ -31,6 +31,36 @@ All three schemes accept **the same path and query parameters**. You can replace
 -   A valid TON address in friendly format (bounceable/unbounceable) or raw.
 -   A **TON DNS** name ending with `.ton` (e.g., `example.ton`).
 
+### Network Type (Mainnet vs Testnet)
+
+Friendly addresses encode network information:
+
+-   **Mainnet addresses** start with `EQ`, `UQ` (non-bounceable), or `kQ` (bounceable)
+-   **Testnet addresses** start with `0Q` (non-bounceable), `kQ` (bounceable)
+
+**IMPORTANT RULES:**
+
+1.  **Network Validation**: Testnet addresses can only be processed in testnet wallets. Mainnet addresses can only be processed in mainnet wallets. Deep link parsers SHOULD validate network type when wallet's network is known.
+
+2.  **Bounceable Flag is IGNORED**: The bounceable flag encoded in the friendly address MUST be ignored. The wallet decides the bounceable value based on its own logic (typically: bounceable for regular wallets, non-bounceable for new/uninitialized contracts).
+
+3.  **Raw Addresses**: Raw addresses (`0:...` or `-1:...`) do not contain network information. Wallets should handle them according to their current network mode.
+
+**Examples:**
+
+```text
+# Mainnet addresses
+UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh  # non-bounceable mainnet
+EQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsInk  # bounceable mainnet
+
+# Testnet addresses
+0QAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsD06  # non-bounceable testnet
+kQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsXYZ  # bounceable testnet
+
+# Raw address (no network info)
+0:1964d8f037e87a51b5a6bb53f5d1b1bea7efcdfc94a319db67278e1c30576ab0
+```
+
 ---
 
 ## Transfer Parameters — Quick Reference
@@ -235,7 +265,7 @@ ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1&jetton=
 # Invalid: Jetton + exp without amount (must be rejected)
 ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&exp=1796015245
 
-# Invalid: Jetton + bin without amount (must be rejected)
+# Valid: Jetton + bin without amount - shows send-screen with locked bin (user enters amount)
 ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin=te6cckEBAQEACQAADgAAAABiaW793PSE
 ```
 
