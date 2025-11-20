@@ -1,16 +1,6 @@
 # @ton-deeplinks/parser
 
-Reference implementation of TON Wallet Deep Link Parser based on the [TON Wallet Deep Links Standard](../../standart.md).
-
-## Features
-
-- ✅ Parse `ton://`, `tonkeeper://`, and `https://` schemes
-- ✅ Validate all parameters according to the standard
-- ✅ Detect screen mode (send-screen vs confirmation-screen)
-- ✅ TypeScript-first with full type definitions
-- ✅ XOR pattern for type-safe results
-- ✅ Typed error hierarchy with semantic grouping
-- ✅ Restricted mode for basic feature set
+String-only parser for TON wallet deep links. Validates URLs and returns parameters as strings without type conversion.
 
 ## Installation
 
@@ -18,383 +8,372 @@ Reference implementation of TON Wallet Deep Link Parser based on the [TON Wallet
 npm install @ton-deeplinks/parser
 ```
 
-## Usage
-
-### Transfer Links
+## Quick Start
 
 ```typescript
 import { parseDeepLink } from '@ton-deeplinks/parser'
 
-// Parse a transfer deep link (full mode - default)
-const result = parseDeepLink(
+const { address, amount, text, network } = parseDeepLink(
   'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&text=Hello'
 )
 
-// XOR pattern - only one field is defined
-if (result.error) {
-  console.error('Parse error:', result.error.message)
-  console.error('Error type:', result.error.type)
-} else {
-  console.log('Screen mode:', result.transfer.screenMode)
-  console.log('Transaction:', result.transfer.transaction)
+console.log(address)  // 'UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh'
+console.log(amount)   // '1000000000' (string)
+console.log(text)     // 'Hello'
+console.log(network)  // 'mainnet'
+```
 
-  // TypeScript discriminates based on screenMode
-  if (result.transfer.screenMode === 'confirmation-screen') {
-    // TypeScript knows this is ConfirmationScreenResult
-    // amount is guaranteed to be bigint (not undefined)
-    console.log('Amount:', result.transfer.transaction.amount)
-  } else {
-    // TypeScript knows this is SendScreenResult
-    // amount is never (user will enter it in UI)
-    // result.transfer.transaction.amount is not accessible
-  }
+## API Reference
+
+### `parseDeepLink(url: string, options?: ParserOptions): TransferParams`
+
+Parses and validates a TON wallet transfer deep link. Throws errors on invalid input.
+
+**Options:**
+
+```typescript
+interface ParserOptions {
+  restricted?: boolean              // Only basic features (default: false)
+  network?: 'mainnet' | 'testnet'   // Validate address network
+  walletSpecificPrefixes?: string[] // Additional URL prefixes
 }
 ```
 
-### Type Safety Examples
+- **`restricted`** - Only allows `address`, `jetton`, `amount`, `text`. Rejects `bin`, `init`, `exp`
+- **`network`** - Validates that address network matches wallet network (prevents cross-network transactions)
+- **`walletSpecificPrefixes`** - Custom URL prefixes (e.g., `['tonkeeper://', 'https://app.tonkeeper.com/']`). The `ton://` prefix is always supported
+
+**Returns:**
 
 ```typescript
-import { parseDeepLink } from '@ton-deeplinks/parser'
-
-// Example 1: Mutually exclusive text/bin
-const params1 = {
-  address: "UQA...",
-  text: "hello",
-  bin: "te6..." // ❌ TypeScript error: text and bin are mutually exclusive
+// TON transfer
+type TonTransferParams = {
+  address?: string      // Or dns (mutually exclusive)
+  dns?: string          // TON DNS domain
+  amount?: string       // Nanotons as string
+  text?: string         // Comment (or bin, mutually exclusive)
+  bin?: string          // Binary payload as base64 BOC
+  init?: string         // StateInit as base64 BOC (TON only)
+  exp?: string          // UNIX timestamp (requires amount)
+  network: 'mainnet' | 'testnet'
 }
 
-// Example 2: exp requires amount
-const params2 = {
-  address: "UQA...",
-  exp: "1796015245" // ❌ TypeScript error: exp requires amount
-}
-
-// ✅ Correct
-const params3 = {
-  address: "UQA...",
-  amount: "1000000000",
-  exp: "1796015245"
-}
-
-// Example 3: Screen mode guarantees
-const result = parseDeepLink('ton://transfer/UQA...?amount=100')
-if (result.transfer && result.transfer.screenMode === 'confirmation-screen') {
-  const amount: bigint = result.transfer.transaction.amount // ✅ guaranteed to exist as bigint
+// Jetton transfer
+type JettonTransferParams = {
+  address?: string      // Or dns
+  dns?: string
+  jetton: string        // Jetton master contract address (required)
+  amount?: string       // Token units as string
+  text?: string         // Comment (or bin)
+  bin?: string
+  exp?: string          // UNIX timestamp (requires amount)
+  network: 'mainnet' | 'testnet'
 }
 ```
 
-### Error Handling
+## Parameters
+
+| Parameter | Type | Description | TON | Jetton | Restricted |
+|-----------|------|-------------|-----|--------|------------|
+| `address` | string | Recipient address (friendly/raw, XOR with dns) | ✅ | ✅ | ✅ |
+| `dns` | string | TON DNS domain (XOR with address) | ✅ | ✅ | ✅ |
+| `amount` | string | Amount in atomic units (nanotons/tokens) | ✅ | ✅ | ✅ |
+| `text` | string | Text comment (XOR with bin) | ✅ | ✅ | ✅ |
+| `bin` | string | Binary payload as base64 BOC (XOR with text) | ✅ | ✅ | ❌ |
+| `init` | string | StateInit as base64 BOC | ✅ | ❌ | ❌ |
+| `exp` | string | Valid-until UNIX timestamp (requires amount) | ✅ | ✅ | ❌ |
+| `jetton` | string | Jetton master contract address | ❌ | ✅ | ✅ |
+
+## Usage Examples
+
+### Basic TON Transfer (Send Screen)
 
 ```typescript
-import { FormatError, LogicError, ExpiredError } from '@ton-deeplinks/parser'
+// No amount - wallet shows send screen for user input
+const { address, network } = parseDeepLink(
+  'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh'
+)
+// address: 'UQA...'
+// network: 'mainnet'
+```
 
-const result = parseDeepLink(url)
+### TON Transfer with Amount (Confirmation Screen)
 
-if (result.error) {
-  if (result.error instanceof FormatError) {
-    switch (result.error.type) {
-      case 'invalid-boc':
-        console.error('Invalid BOC format')
-        break
-      case 'invalid-address':
-        console.error('Invalid address')
-        break
-    }
-  }
+```typescript
+const { address, amount, text, network } = parseDeepLink(
+  'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&text=Payment'
+)
+// amount: '1000000000' (string, convert to bigint for processing)
+// text: 'Payment'
+```
 
-  if (result.error instanceof LogicError) {
-    switch (result.error.type) {
-      case 'mutually-exclusive':
-        console.error('text and bin cannot be used together')
-        break
-      case 'missing-required':
-        console.error('exp requires amount')
-        break
-    }
-  }
+### Jetton Transfer
 
-  if (result.error instanceof ExpiredError) {
-    console.error('Transaction expired')
-  }
+```typescript
+const { address, jetton, amount, network } = parseDeepLink(
+  'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&amount=1000000'
+)
+// jetton: 'EQCxE6...' (jetton master contract)
+// amount: '1000000' (token atomic units)
+```
+
+### DNS Address
+
+```typescript
+const { dns, amount, network } = parseDeepLink(
+  'ton://transfer/wallet.ton?amount=1000000000'
+)
+// dns: 'wallet.ton'
+// network: 'mainnet' (DNS always mainnet)
+// Note: Parser doesn't resolve DNS - do it separately
+```
+
+### Binary Payload
+
+```typescript
+const { address, bin, network } = parseDeepLink(
+  'ton://transfer/UQA...?bin=te6cckEBAQEACQAADgAAAABiaW793PSE'
+)
+// bin: 'te6cckEBAQEACQAADgAAAABiaW793PSE' (base64 BOC)
+```
+
+### StateInit
+
+```typescript
+const { address, init, network } = parseDeepLink(
+  'ton://transfer/UQA...?init=te6ccgEBAwEAEQACATQBAgAI_____wAIAAAAAA'
+)
+// init: 'te6ccgEB...' (StateInit as base64 BOC)
+```
+
+### Expiration Time
+
+```typescript
+const { address, amount, exp, network } = parseDeepLink(
+  'ton://transfer/UQA...?amount=1000000000&exp=1796015245'
+)
+// exp: '1796015245' (UNIX timestamp)
+// Note: exp requires amount to be present
+```
+
+### Network Validation
+
+```typescript
+// Mainnet wallet - validate addresses
+try {
+  const result = parseDeepLink(
+    'ton://transfer/kQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsIaw?amount=1',
+    { network: 'mainnet' }
+  )
+} catch (error) {
+  // Throws NetworkMismatchError
+  // Testnet address (kQ...) can't be used in mainnet wallet
 }
+
+// Correct usage
+const { address } = parseDeepLink(
+  'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1',
+  { network: 'mainnet' }
+)
+// ✅ Mainnet address in mainnet wallet
 ```
 
 ### Restricted Mode
 
 ```typescript
-// For wallets implementing basic feature set only
-const result = parseDeepLink(url, {
-  restricted: true  // Only address, jetton, amount, text
-})
-
-// TypeScript enforces restricted types!
-if (result.transfer) {
-  const tx = result.transfer.transaction
-  // ✅ tx.address is available
-  // ✅ tx.amount is available
-  // ✅ tx.payload is available (text only)
-  // ❌ tx.stateInit is never (TypeScript error if you try to access)
-  // ❌ tx.validUntil is never (TypeScript error if you try to access)
-
-  // Params also restricted
-  const params = result.transfer.params
-  // ✅ params.text is available
-  // ❌ params.bin is never (TypeScript prevents usage)
-  // ❌ params.init is never
-  // ❌ params.exp is never
+// For wallets implementing only basic features
+try {
+  const result = parseDeepLink(
+    'ton://transfer/UQA...?bin=te6...',
+    { restricted: true }
+  )
+} catch (error) {
+  // Throws LogicError: 'bin' not allowed in restricted mode
 }
 
-// bin, init, exp parameters will be rejected with LogicError at runtime
-// TypeScript prevents them at compile time in restricted mode
+// Allowed in restricted mode
+const { address, amount, text } = parseDeepLink(
+  'ton://transfer/UQA...?amount=1000000000&text=Hello',
+  { restricted: true }
+)
+// ✅ Only address, jetton, amount, text allowed
 ```
 
-### Jetton Transfers
+### Wallet-Specific Prefixes
 
 ```typescript
-// Jetton transfer
-const result = parseDeepLink('ton://transfer/UQA...?jetton=EQC...&amount=1000000000')
-
-if (result.transfer) {
-  // Check if it's a jetton transfer
-  if ('jetton' in result.transfer.params) {
-    const jettonParams = result.transfer.params
-    console.log('Jetton master:', jettonParams.jetton)
-
-    // ❌ TypeScript error: init is forbidden for jetton transfers
-    // jettonParams.init will cause compile error
-  }
-}
-```
-
-### Deep Link Bases
-
-```typescript
-// ton:// is always supported by default
+// ton:// is always supported
 const result1 = parseDeepLink('ton://transfer/UQA...')
-// ✅ Works without any options
+// ✅ Works
 
-// Tonkeeper adds its wallet-specific deep link bases
-const result2 = parseDeepLink('tonkeeper://transfer/UQA...', {
-  walletSpecificPrefixes: [
-    'tonkeeper://',
-    'https://app.tonkeeper.com/'
-  ]
-  // ton:// is implicitly supported, no need to include it
-})
+// Add custom prefixes for your wallet
+const { address } = parseDeepLink(
+  'tonkeeper://transfer/UQA...',
+  {
+    walletSpecificPrefixes: [
+      'tonkeeper://',
+      'https://app.tonkeeper.com/'
+    ]
+  }
+)
+// ✅ Both ton:// and custom prefixes work
 
-// Custom wallet with its own deep link bases
-const result3 = parseDeepLink('https://app.mywallet.com/transfer/UQA...', {
-  walletSpecificPrefixes: [
-    'mywallet://',
-    'https://app.mywallet.com/'
-  ]
-  // ton:// always works in addition to these
-})
-
-// Summary:
-// - ton:// is universal and always supported (implicit)
-// - walletSpecificPrefixes adds wallet-specific bases on top of ton://
-// - Don't include 'ton://' in walletSpecificPrefixes array
+// HTTPS deep link
+const result2 = parseDeepLink(
+  'https://app.tonkeeper.com/transfer/UQA...',
+  {
+    walletSpecificPrefixes: ['https://app.tonkeeper.com/']
+  }
+)
+// ✅ Works
 ```
 
-### Network Detection and Validation
+## Error Handling
 
-The parser automatically detects network type (mainnet/testnet) from friendly addresses and can validate against the wallet's network to prevent cross-network transactions.
-
-```typescript
-// Network is extracted from friendly address
-const mainnetResult = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1')
-console.log(mainnetResult.transfer?.transaction.network) // 'mainnet'
-
-const testnetResult = parseDeepLink('ton://transfer/0QAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsD06?amount=1')
-console.log(testnetResult.transfer?.transaction.network) // 'testnet'
-
-const rawResult = parseDeepLink('ton://transfer/0:1964d8f037e87a51b5a6bb53f5d1b1bea7efcdfc94a319db67278e1c30576ab0?amount=1')
-console.log(rawResult.transfer?.transaction.network) // undefined (raw address has no network info)
-
-// Validate against wallet's network
-const mainnetWallet = parseDeepLink('ton://transfer/UQA...?amount=1', {
-  network: 'mainnet' // ✅ OK - address matches wallet network
-})
-
-const testnetAddressInMainnetWallet = parseDeepLink('ton://transfer/0QA...?amount=1', {
-  network: 'mainnet' // ❌ Error - testnet address in mainnet wallet
-})
-// Error: Address network 'testnet' does not match expected network 'mainnet'
-
-// Raw addresses bypass network validation (wallet uses current network mode)
-const rawInMainnet = parseDeepLink('ton://transfer/0:...?amount=1', {
-  network: 'mainnet' // ✅ OK - raw addresses have no network info
-})
-```
-
-**Important:**
-- **Bounceable flag is ALWAYS ignored** - wallet decides bounceable value based on its logic
-- **Network validation prevents cross-network sends** - testnet address can't be used in mainnet wallet
-- **Raw addresses** have no network info and bypass validation
-
-## API
-
-### `parseDeepLink(url: string, options?: ParserOptions): ParseResult`
-
-Parse and validate a TON wallet transfer deep link.
-
-**Options:**
-- `restricted` - Restricted mode: only basic features (default: `false`)
-- `walletSpecificPrefixes` - Wallet-specific deep link bases in addition to `ton://` (optional, e.g., `['tonkeeper://', 'https://app.tonkeeper.com/']`)
-- `network` - Expected network type for validation (optional: `'mainnet' | 'testnet'`). Validates address network matches wallet network to prevent cross-network transactions
-
-**Returns:** ParseResult with XOR pattern
-- `{ transfer: TransferResult }` - Valid transfer link
-- `{ error: DeepLinkError }` - Parse/validation error
-
-### Types
-
-Types are organized hierarchically with enforced constraints:
+The parser throws typed errors. All errors extend `DeepLinkError`:
 
 ```typescript
-// ============ BASE TYPE (main) ============
+import {
+  parseDeepLink,
+  ParseError,
+  FormatError,
+  LogicError,
+  ExpiredError,
+  NetworkMismatchError
+} from '@ton-deeplinks/parser'
 
-interface BaseTransactionRequest {
-  address: string
-  amount?: bigint  // Parsed from string in URL
-  payload?: string
-  stateInit?: string
-  validUntil?: number  // Parsed from exp parameter
-}
-
-// ============ MODIFIERS (derived from base) ============
-
-// Send-screen: amount forbidden (not in URL), validUntil forbidden
-type SendScreenTransaction = Omit<BaseTransactionRequest, 'amount' | 'validUntil'> & {
-  amount?: never
-  validUntil?: never
-}
-
-// Confirmation-screen: amount required
-type ConfirmationScreenTransaction = Omit<BaseTransactionRequest, 'amount'> & {
-  amount: bigint
-}
-
-// Restricted send-screen: amount forbidden, no stateInit, no validUntil
-type RestrictedSendScreenTransaction = Omit<BaseTransactionRequest, 'amount' | 'stateInit' | 'validUntil'> & {
-  amount?: never
-  stateInit?: never
-  validUntil?: never
-}
-
-// Restricted confirmation-screen: amount required, no stateInit, no validUntil
-type RestrictedConfirmationScreenTransaction = Omit<BaseTransactionRequest, 'stateInit' | 'validUntil'> & {
-  amount: bigint
-  stateInit?: never
-  validUntil?: never
-}
-
-// ============ UNIONS ============
-
-type TransactionRequest = SendScreenTransaction | ConfirmationScreenTransaction
-type RestrictedTransactionRequest = RestrictedSendScreenTransaction | RestrictedConfirmationScreenTransaction
-
-// ============ TRANSFER PARAMETERS (with constraints) ============
-
-// text and bin are mutually exclusive
-type TransferParams = BaseTransferParams &
-  (TextPayload | BinaryPayload | NoPayload) &
-  (AmountWithoutExp | AmountWithExp)  // exp requires amount
-
-// Restricted params: only text allowed (no bin, init, exp)
-type RestrictedTransferParams = BaseTransferParams &
-  TextPayload &
-  AmountWithoutExp & {
-    init?: never
+try {
+  const result = parseDeepLink(url, options)
+} catch (error) {
+  if (error instanceof ParseError) {
+    // URL structure errors
+    console.error('Parse error:', error.type)
+    // Types: 'unknown-scheme', 'invalid-url', 'malformed-params'
   }
 
-// ============ RESULTS (discriminated by screen mode) ============
+  if (error instanceof FormatError) {
+    // Parameter format errors
+    console.error('Format error:', error.type, error.param)
+    // Types: 'invalid-boc', 'invalid-state-init', 'invalid-address',
+    //        'invalid-amount', 'invalid-timestamp'
+  }
 
-interface SendScreenResult {
-  screenMode: 'send-screen'
-  transaction: SendScreenTransaction
-  params: TransferParams | JettonTransferParams
+  if (error instanceof LogicError) {
+    // Parameter combination errors
+    console.error('Logic error:', error.type, error.param)
+    // Types: 'mutually-exclusive', 'missing-required', 'invalid-combination',
+    //        'unknown-parameter', 'duplicate-parameter'
+  }
+
+  if (error instanceof ExpiredError) {
+    // Transaction expired (exp < now)
+    console.error('Transaction expired')
+  }
+
+  if (error instanceof NetworkMismatchError) {
+    // Address network doesn't match wallet network
+    console.error(`Expected ${error.expected}, got ${error.actual}`)
+  }
 }
-
-interface ConfirmationScreenResult {
-  screenMode: 'confirmation-screen'
-  transaction: ConfirmationScreenTransaction
-  params: TransferParams | JettonTransferParams
-}
-
-type TransferResult = SendScreenResult | ConfirmationScreenResult
-
-// Restricted results
-type RestrictedTransferResult = RestrictedSendScreenResult | RestrictedConfirmationScreenResult
-
-// ============ PARSE RESULTS (XOR pattern) ============
-
-type ParseResult =
-  | { transfer: TransferResult; error?: never }
-  | { error: DeepLinkError; transfer?: never }
-
-type RestrictedParseResult =
-  | { transfer: RestrictedTransferResult; error?: never }
-  | { error: DeepLinkError; transfer?: never }
 ```
 
-**Key Type Safety Features:**
+### Error Types
 
-1. **Mutually Exclusive Fields**: `text` and `bin` cannot both be present
-2. **Linked Constraints**: `exp` requires `amount` at type level
-3. **Screen Mode Discrimination**: `screenMode: 'confirmation-screen'` guarantees `amount: bigint`
-4. **Restricted Mode Enforcement**: `bin`, `init`, `exp` forbidden at compile time
-5. **Type Parsing**: Amount parsed from `string` (URL) to `bigint` (transaction)
+**ParseError** (URL structure):
+- `unknown-scheme` - Unsupported URL scheme
+- `invalid-url` - Malformed URL structure
+- `malformed-params` - Invalid query string format
 
-See [types.ts](./src/types.ts) for full type definitions.
-
-## Error Hierarchy
-
-### Format Errors
+**FormatError** (parameter format):
 - `invalid-boc` - Invalid BOC format
 - `invalid-state-init` - Invalid StateInit format
-- `invalid-address` - Invalid address format
-- `invalid-amount` - Invalid amount format
-- `invalid-timestamp` - Invalid timestamp format
+- `invalid-address` - Invalid address format (not friendly/raw/DNS)
+- `invalid-amount` - Invalid amount (not positive integer, has decimals)
+- `invalid-timestamp` - Invalid timestamp (not positive integer)
 
-### Logic Errors
-- `mutually-exclusive` - text and bin used together
-- `missing-required` - exp without amount
-- `invalid-combination` - init with jetton
-- `unknown-parameter` - Unknown parameter (always strict)
-- `duplicate-parameter` - Duplicate parameter
+**LogicError** (parameter combinations):
+- `mutually-exclusive` - `text` and `bin` both present
+- `missing-required` - `exp` without `amount`
+- `invalid-combination` - `init` with `jetton`, or restricted mode violation, or DNS on testnet
+- `unknown-parameter` - Unknown parameter in URL
+- `duplicate-parameter` - Same parameter specified multiple times
 
-### Expired Error
-- `expired` - Transaction expired (exp < current time)
+**ExpiredError**:
+- `expired` - `exp` timestamp is in the past
 
-### Parse Errors
-- `unknown-scheme` - Unknown URI scheme
-- `invalid-url` - Malformed URL
-- `malformed-params` - Invalid parameter format
+**NetworkMismatchError**:
+- `network-mismatch` - Address network doesn't match expected wallet network
 
 ## Validation Rules
 
-### Full Mode (default: restricted=false)
-- ✅ `exp` requires `amount`
-- ✅ `text` and `bin` are mutually exclusive
-- ✅ `init` not allowed in Jetton transfers
-- ✅ Amount must be non-negative integer
-- ✅ Exp must be valid UNIX timestamp
-- ✅ BOC and StateInit must be valid base64
-- ✅ Address format validation
-- ✅ Unknown parameters always rejected (strict by default)
+### Format Validation
 
-### Restricted Mode (restricted=true)
-Only supports: `address`, `jetton`, `amount`, `text`
+**Address formats:**
+- Friendly: `UQ...`, `EQ...` (mainnet), `kQ...`, `0Q...` (testnet)
+- Raw: `0:hex64`, `-1:hex64` (masterchain)
+- DNS: `name.ton` (alphanumeric + hyphens, no leading/trailing hyphens)
+- DNS not supported on testnet
 
-Rejects: `bin`, `init`, `exp` with LogicError
+**Amount:**
+- Positive integer only (no decimals, no leading zeros)
+- Maximum: `18446744073709551615` (uint64)
+
+**Timestamp (exp):**
+- Positive integer (UNIX seconds)
+- Must be in the future
+
+**BOC (bin):**
+- Valid base64 encoding
+- Valid BOC structure (validated with `@ton/core`)
+
+**StateInit (init):**
+- Valid base64 encoding
+- Valid StateInit structure (validated with `@ton/core`)
+
+### Logic Validation
+
+**Mutually exclusive:**
+- `text` XOR `bin` (never both)
+- `address` XOR `dns` (never both)
+
+**Dependencies:**
+- `exp` requires `amount`
+
+**Restrictions:**
+- `init` not allowed with `jetton`
+- In restricted mode: `bin`, `init`, `exp` forbidden
+- DNS not allowed on testnet
+- Unknown parameters always rejected
+- Duplicate parameters rejected
+
+**Network consistency:**
+- When `options.network` specified: address network must match
+- For jetton transfers: recipient and jetton addresses must have same network
+- Raw addresses (`0:hex`) bypass network validation
+- DNS addresses bypass network validation (assumed mainnet)
+
+## Network Detection
+
+Network is detected from friendly addresses:
+- `UQ...`, `EQ...` → mainnet
+- `kQ...`, `0Q...` → testnet
+- `0:hex...` → undefined (raw address)
+- `name.ton` → mainnet (DNS)
+
+When `options.network` is specified, the parser validates that:
+1. Address network matches expected wallet network
+2. For jetton transfers, both recipient and jetton networks match
+
+This prevents cross-network transactions (e.g., testnet address in mainnet wallet).
 
 ## Development
 
 ```bash
 # Build
 npm run build
+
+# Run tests
+npm test
 
 # Watch mode
 npm run dev
