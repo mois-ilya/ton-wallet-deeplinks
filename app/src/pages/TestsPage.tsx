@@ -8,6 +8,7 @@ import { Accordion } from '../components/ui/accordion'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Badge } from '../components/ui/badge'
+import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group'
 
 type Scheme = 'ton' | 'tonkeeper' | 'https'
 
@@ -91,19 +92,23 @@ export default function TestsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-xs">
                 <div className="flex items-center gap-1">
                   <label className="font-medium w-12">Scheme:</label>
-                  <div className="flex gap-1">
-                    {(['ton', 'tonkeeper', 'https'] as const).map((s) => (
-                      <Button
-                        key={s}
-                        variant={scheme === s ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setScheme(s)}
-                        className="text-[10px] px-2 h-6"
-                      >
-                        {s === 'https' ? 'https' : s}
-                      </Button>
-                    ))}
-                  </div>
+                  <ToggleGroup
+                    type="single"
+                    value={scheme}
+                    onValueChange={(value) => value && setScheme(value as Scheme)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ToggleGroupItem value="ton" className="text-[10px] px-2 h-6">
+                      ton
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="tonkeeper" className="text-[10px] px-2 h-6">
+                      tonkeeper
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="https" className="text-[10px] px-2 h-6">
+                      https
+                    </ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
 
                 <div className="flex items-center gap-1">

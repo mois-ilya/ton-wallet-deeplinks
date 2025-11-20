@@ -1,15 +1,12 @@
-/* Расширяем таблицы на всю ширину */
 .markdown-body table {
   width: 100%;
   display: table;
 }
 
-/* Отступ внизу страницы */
 .standard-page-wrapper {
   padding-bottom: 4rem !important;
 }
 
-/* Ensure bullet points are visible */
 .markdown-body ul {
   list-style-type: disc;
   padding-left: 2rem;
