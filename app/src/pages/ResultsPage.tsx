@@ -3,6 +3,19 @@ import { GROUPS } from '../data/tests'
 
 type Status = '' | 'ok' | 'partial' | 'not_ok' | 'unknown'
 
+type WalletTestResult = {
+  exportDate: string
+  scheme: string
+  wallet: string
+  testResults: Array<{
+    testId: string
+    title: string
+    status: 'ok' | 'partial' | 'not_ok' | null
+    note: string
+    testedAt: string
+  }>
+}
+
 type ParsedResults = {
   wallets: string[]
   rows: Array<{
@@ -15,80 +28,13 @@ type ParsedResults = {
   }>
 }
 
-function parseCsv(text: string): ParsedResults {
-  const lines = text.split(/\r?\n/).filter(Boolean)
-  if (lines.length === 0) return { wallets: [], rows: [] }
-  const header = splitCsvLine(lines[0])
-  // Fixed columns
-  const iId = header.indexOf('id')
-  const iTitle = header.indexOf('title')
-  const iLink = header.indexOf('link')
-  const iExpected = header.indexOf('expected')
-  const iNote = header.indexOf('note')
-  // Wallet columns are all columns after 'note'
-  const walletStart = iNote + 1
-  const wallets = header.slice(walletStart)
-
-  const rows: ParsedResults['rows'] = []
-  for (let i = 1; i < lines.length; i++) {
-    const cols = splitCsvLine(lines[i])
-    const statuses: Record<string, Status> = {}
-    for (let w = 0; w < wallets.length; w++) {
-      const name = wallets[w]
-      const val = (cols[walletStart + w] || '') as Status
-      statuses[name] = val
-    }
-    rows.push({
-      id: cols[iId] || '',
-      title: cols[iTitle] || '',
-      link: cols[iLink] || '',
-      expected: cols[iExpected] || '',
-      note: cols[iNote] || '',
-      statuses,
-    })
-  }
-  return { wallets, rows }
-}
-
-function splitCsvLine(line: string): string[] {
-  const result: string[] = []
-  let current = ''
-  let inQuotes = false
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]
-    if (inQuotes) {
-      if (ch === '"') {
-        if (line[i + 1] === '"') {
-          current += '"'
-          i++
-        } else {
-          inQuotes = false
-        }
-      } else {
-        current += ch
-      }
-    } else {
-      if (ch === ',') {
-        result.push(current)
-        current = ''
-      } else if (ch === '"') {
-        inQuotes = true
-      } else {
-        current += ch
-      }
-    }
-  }
-  result.push(current)
-  return result
-}
-
 function StatusBadge({ status, title }: { status: Status; title?: string }) {
-  let bg = '#eee', color = '#444', label = '—'
-  if (status === 'ok') { bg = '#e6ffed'; color = '#067d28'; label = 'OK' }
-  if (status === 'partial') { bg = '#fff7e6'; color = '#ad6800'; label = 'Partial' }
-  if (status === 'not_ok') { bg = '#ffe6e6'; color = '#b00000'; label = 'Not OK' }
+  let className = 'bg-gray-200 text-gray-600', label = '—'
+  if (status === 'ok') { className = 'bg-green-50 text-green-700'; label = 'OK' }
+  if (status === 'partial') { className = 'bg-yellow-50 text-yellow-700'; label = 'Partial' }
+  if (status === 'not_ok') { className = 'bg-red-50 text-red-700'; label = 'Not OK' }
   return (
-    <span aria-label={label} title={title} style={{ background: bg, color, border: '1px solid #ddd', borderRadius: 12, padding: '2px 8px', fontSize: 12 }}>
+    <span aria-label={label} title={title} className={`inline-block border border-gray-300 rounded-xl px-2 py-0.5 text-xs ${className}`}>
       {label}
     </span>
   )
@@ -101,19 +47,25 @@ export default function ResultsPage() {
 
   useEffect(() => {
     document.title = 'TON Wallets Deep Links Tester – Results'
-    fetch(import.meta.env.BASE_URL + 'results.csv')
-      .then((r) => {
-        if (!r.ok) throw new Error(String(r.status))
-        return r.text()
-      })
-      .then((t) => {
-        const parsed = parseCsv(t)
-        setWallets(parsed.wallets)
 
-        // Build rows from tests.json (GROUPS) as the source of truth.
-        const statusById = new Map<string, Record<string, Status>>()
-        for (const r of parsed.rows) statusById.set(r.id, r.statuses)
+    // Load all wallet JSON files
+    const walletFiles = ['Tonkeeper_JS.json', 'Tonkeeper_IOS.json', '_Wallet.json', 'MyTonWallet.json']
+    const baseUrl = import.meta.env.BASE_URL + 'test-results/'
 
+    Promise.all(
+      walletFiles.map(file =>
+        fetch(baseUrl + file).then(r => {
+          if (!r.ok) throw new Error(`Failed to load ${file}: ${r.status}`)
+          return r.json() as Promise<WalletTestResult>
+        })
+      )
+    )
+      .then((walletResults) => {
+        // Extract wallet names
+        const walletNames = walletResults.map(w => w.wallet)
+        setWallets(walletNames)
+
+        // Build rows from GROUPS as the source of truth
         const allItems: Array<{ id: string; title: string }> = []
         for (const g of GROUPS) {
           for (const it of g.items) {
@@ -123,11 +75,14 @@ export default function ResultsPage() {
 
         const normalizedRows: ParsedResults['rows'] = allItems.map((it) => {
           const statuses: Record<string, Status> = {}
-          for (const w of parsed.wallets) {
-            const raw = statusById.get(it.id)?.[w] ?? ''
-            const normalized: Status = raw === 'ok' || raw === 'partial' || raw === 'not_ok' ? raw : 'unknown'
-            statuses[w] = normalized
+
+          for (const walletResult of walletResults) {
+            const test = walletResult.testResults.find(t => t.testId === it.id)
+            const status = test?.status ?? null
+            const normalized: Status = status === 'ok' || status === 'partial' || status === 'not_ok' ? status : 'unknown'
+            statuses[walletResult.wallet] = normalized
           }
+
           return {
             id: it.id,
             title: it.title,
@@ -140,7 +95,7 @@ export default function ResultsPage() {
 
         setRows(normalizedRows)
       })
-      .catch((e) => setError('Failed to load results.csv: ' + e.message))
+      .catch((e) => setError('Failed to load test results: ' + e.message))
   }, [])
 
   const idToGroup = useMemo(() => {
@@ -195,38 +150,38 @@ export default function ResultsPage() {
   }, [byGroup, wallets])
 
   return (
-    <main style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
-      <header style={{ position: 'sticky', top: 0, zIndex: 10, background: '#fff', padding: '8px 0', borderBottom: '1px solid #eee', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1 style={{ margin: 0 }}>Compatibility Results</h1>
+    <main className="max-w-6xl mx-auto px-4 py-4">
+      <header className="sticky top-14 z-10 bg-white py-2 border-b border-border mb-4">
+        <div className="flex items-center justify-between">
+          <h1 className="m-0 text-2xl font-bold">Compatibility Results</h1>
         </div>
-        <p style={{ marginTop: 6, color: '#666', fontSize: 12 }}>Hover over yellow badges (Partial) or info icons to see details</p>
+        <p className="mt-1.5 text-muted-foreground text-xs">Hover over yellow badges (Partial) or info icons to see details</p>
       </header>
 
-      {error && <div style={{ color: 'crimson', marginBottom: 12 }}>{error}</div>}
+      {error && <div className="text-destructive mb-3">{error}</div>}
 
       {/* Feature summary */}
       <section aria-labelledby="feature-summary-heading">
-        <h2 id="feature-summary-heading" style={{ margin: '0 0 8px 0' }}>Feature support summary</h2>
-        <p style={{ margin: '0 0 12px 0', color: '#6b7280' }}>
+        <h2 id="feature-summary-heading" className="m-0 mb-2 text-xl font-semibold">Feature support summary</h2>
+        <p className="m-0 mb-3 text-muted-foreground">
           Rule: per wallet, a feature is <strong>OK</strong> if all its tests are OK;
           <strong> Not OK</strong> if there are no OK results and at least one Partial/Not OK/missing;
           otherwise <strong>Partial</strong>.
         </p>
-        <div role="region" aria-label="Feature summary table" style={{ marginBottom: 24, width: '100%', overflowX: 'auto', border: '1px solid #eee', borderRadius: 8 }}>
-          <table role="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div role="region" aria-label="Feature summary table" className="mb-6 w-full overflow-x-auto border border-border rounded-lg">
+          <table role="table" className="w-full border-collapse">
             <thead>
               <tr>
-                <th scope="col" style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee', width: '24%' }}>Feature</th>
+                <th scope="col" className="text-left p-2 border-b border-border w-1/4">Feature</th>
                 {wallets.map((w) => (
-                  <th scope="col" key={w} style={{ textAlign: 'center', padding: '10px 8px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{w}</th>
+                  <th scope="col" key={w} className="text-center p-2 border-b border-border whitespace-nowrap">{w}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {groupSummaries.map(({ id, title, perWallet }) => (
                 <tr key={id}>
-                  <th scope="row" style={{ padding: '10px 8px', borderBottom: '1px solid #f7f7f7', fontWeight: 600, textAlign: 'left' }}>
+                  <th scope="row" className="p-2 border-b border-gray-100 font-semibold text-left">
                     <a
                       href="#"
                       onClick={(e) => {
@@ -236,13 +191,13 @@ export default function ResultsPage() {
                           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }
                       }}
-                      style={{ color: '#0366d6' }}
+                      className="text-primary hover:underline"
                     >
                       {title}
                     </a>
                   </th>
                   {wallets.map((w) => (
-                    <td key={w} style={{ padding: '10px 8px', borderBottom: '1px solid #f7f7f7', textAlign: 'center' }}>
+                    <td key={w} className="p-2 border-b border-gray-100 text-center">
                       <StatusBadge status={perWallet[w]} />
                     </td>
                   ))}
@@ -253,32 +208,32 @@ export default function ResultsPage() {
         </div>
       </section>
 
-      <h2 style={{ margin: '20px 0 8px' }}>Detailed tests</h2>
-      <hr aria-hidden="true" style={{ height: 2, background: '#eee', border: 0, marginBottom: 12 }} />
+      <h2 className="my-5 mb-2 text-xl font-semibold">Detailed tests</h2>
+      <hr aria-hidden="true" className="h-0.5 bg-border border-0 mb-3" />
 
       {byGroup.map((g) => (
-        <section key={g.id} aria-labelledby={`group-${g.id}`} style={{ marginBottom: 20 }}>
-          <h3 id={`group-${g.id}`} style={{ marginBottom: 8 }}>{g.title}</h3>
-          <div role="region" aria-label={`${g.title} results`} style={{ width: '100%', overflowX: 'auto' }}>
-            <table role="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <section key={g.id} aria-labelledby={`group-${g.id}`} className="mb-5">
+          <h3 id={`group-${g.id}`} className="mb-2 text-lg font-semibold">{g.title}</h3>
+          <div role="region" aria-label={`${g.title} results`} className="w-full overflow-x-auto">
+            <table role="table" className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th scope="col" style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #eee', width: '30%' }}>Test</th>
+                  <th scope="col" className="text-left p-2 border-b border-border w-[30%]">Test</th>
                   {wallets.map((w) => (
-                    <th scope="col" key={w} style={{ textAlign: 'center', padding: '8px 6px', borderBottom: '1px solid #eee', whiteSpace: 'nowrap' }}>{w}</th>
+                    <th scope="col" key={w} className="text-center p-2 border-b border-border whitespace-nowrap">{w}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {g.items.map((r) => (
                   <tr key={r.id}>
-                    <th scope="row" style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', verticalAlign: 'top', textAlign: 'left', fontWeight: 600 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <th scope="row" className="p-2 border-b border-gray-50 align-top text-left font-semibold">
+                      <div className="flex items-center gap-1.5">
                         <span>{r.title}</span>
                       </div>
                     </th>
                     {wallets.map((w) => (
-                      <td key={w} style={{ padding: '8px 6px', borderBottom: '1px solid #f2f2f2', textAlign: 'center' }}>
+                      <td key={w} className="p-2 border-b border-gray-50 text-center">
                         <StatusBadge status={r.statuses[w]} title={r.statuses[w] === 'partial' ? (r.note || 'Partially supported') : undefined} />
                       </td>
                     ))}

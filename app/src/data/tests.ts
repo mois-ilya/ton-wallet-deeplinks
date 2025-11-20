@@ -5,6 +5,10 @@ export type TestItem = {
   linkTemplate: string; // contains {PREFIX} and may contain {ADDRESS}
   expectedReject?: boolean; // mark tests that must be rejected by wallet
   editable?: boolean; // mark links where user can edit payment params (usually when amount is absent)
+
+  // Expiration mode for tests with exp parameter
+  expMode?: 'static' | 'dynamic'; // static: hardcoded exp value; dynamic: requires activation
+  expDuration?: number; // for dynamic mode: seconds until expiration (5, 15, 30, etc)
 };
 
 export type TestGroup = {

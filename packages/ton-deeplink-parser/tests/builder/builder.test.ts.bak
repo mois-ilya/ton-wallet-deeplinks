@@ -1,0 +1,665 @@
+/**
+ * Runtime tests for parseDeepLink function
+ * TDD approach: write tests first, then implement
+ */
+
+import { describe, test, expect } from 'vitest'
+import { parseDeepLink } from '../src/parser.js'
+import { ParseError } from '../src/errors.js'
+
+describe('parseDeepLink - Basic Parsing', () => {
+  describe('ton:// scheme', () => {
+    test('should parse simple TON transfer (send-screen)', () => {
+      const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh')
+
+      expect(result.error).toBeUndefined()
+      expect(result.transfer).toBeDefined()
+      expect(result.transfer?.screenMode).toBe('send-screen')
+      // transaction.address is Address object from @ton/core
+      expect(result.transfer?.transaction.address).toBeDefined()
+      expect(result.transfer?.transaction.address.toRawString()).toMatch(/^0:[a-f0-9]{64}$/)
+      // params.address is string from URL
+      expect(result.transfer?.params.address).toBe('UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh')
+      expect(result.transfer?.transaction.amount).toBeUndefined()
+    })
+
+    test('should parse TON transfer with amount (confirmation-screen)', () => {
+      const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000')
+
+      expect(result.error).toBeUndefined()
+      expect(result.transfer).toBeDefined()
+      expect(result.transfer?.screenMode).toBe('confirmation-screen')
+      // transaction.address is Address object from @ton/core
+      expect(result.transfer?.transaction.address).toBeDefined()
+      expect(result.transfer?.transaction.address.toRawString()).toMatch(/^0:[a-f0-9]{64}$/)
+      // params.address is string from URL
+      expect(result.transfer?.params.address).toBe('UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh')
+      expect(result.transfer?.transaction.amount).toBe(1000000000n)
+    })
+
+    test('should parse TON transfer with text comment', () => {
+      const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&text=Hello')
+
+      expect(result.error).toBeUndefined()
+      expect(result.transfer).toBeDefined()
+      expect(result.transfer?.params).toHaveProperty('text', 'Hello')
+      expect(result.transfer?.transaction.payload).toBeDefined()
+    })
+
+    test('should parse TON transfer with bin payload', () => {
+      const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&bin=te6cckEBAQEACQAADgAAAABiaW793PSE')
+
+      expect(result.error).toBeUndefined()
+      expect(result.transfer).toBeDefined()
+      // params.bin is string from URL
+      expect(result.transfer?.params).toHaveProperty('bin', 'te6cckEBAQEACQAADgAAAABiaW793PSE')
+      // transaction.payload is Cell object
+      expect(result.transfer?.transaction.payload).toBeDefined()
+      expect(result.transfer?.transaction.payload?.toBoc().toString('base64')).toBe('te6cckEBAQEACQAADgAAAABiaW793PSE')
+    })
+
+    test('should parse TON transfer with exp', () => {
+      const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&exp=1796015245')
+
+      expect(result.error).toBeUndefined()
+      expect(result.transfer).toBeDefined()
+      expect(result.transfer?.screenMode).toBe('confirmation-screen')
+      expect(result.transfer?.transaction.validUntil).toBe(1796015245)
+    })
+
+    test('should parse TON transfer with init (StateInit)', () => {
+      const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&init=te6cckEBAQEACQAADgAAAABpbml093PSE')
+
+      expect(result.error).toBeUndefined()
+      expect(result.transfer).toBeDefined()
+      // transaction.stateInit is Cell object
+      expect(result.transfer?.transaction.stateInit).toBeDefined()
+      expect(result.transfer?.transaction.stateInit?.toBoc().toString('base64')).toBe('te6cckEBAQEACQAADgAAAABpbml093PSE')
+    })
+  })
+
+  describe('tonkeeper:// scheme', () => {
+    test('should parse tonkeeper:// scheme', () => {
+      const result = parseDeepLink('tonkeeper://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000', {
+        walletSpecificPrefixes: ['tonkeeper://']
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.transfer).toBeDefined()
+      expect(result.transfer?.screenMode).toBe('confirmation-screen')
+    })
+  })
+
+  describe('https:// universal link', () => {
+    test('should parse https://app.tonkeeper.com/ universal link', () => {
+      const result = parseDeepLink('https://app.tonkeeper.com/transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000', {
+        walletSpecificPrefixes: ['https://app.tonkeeper.com/']
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.transfer).toBeDefined()
+      expect(result.transfer?.screenMode).toBe('confirmation-screen')
+    })
+  })
+})
+
+describe('parseDeepLink - Jetton Transfers', () => {
+  test('should parse jetton transfer (send-screen)', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    if (result.transfer) {
+      expect(result.transfer.screenMode).toBe('send-screen')
+      expect('jetton' in result.transfer.params && result.transfer.params.jetton).toBe('EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs')
+    }
+  })
+
+  test('should parse jetton transfer with amount (confirmation-screen)', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&amount=1000000000')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.screenMode).toBe('confirmation-screen')
+    expect(result.transfer?.transaction.amount).toBe(1000000000n)
+  })
+
+  test('should parse jetton transfer with bin (without amount)', () => {
+    // This is valid according to the standard (line 238)
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&bin=te6cckEBAQEACQAADgAAAABiaW793PSE')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.screenMode).toBe('send-screen')
+    // transaction.payload is Cell object
+    expect(result.transfer?.transaction.payload).toBeDefined()
+    expect(result.transfer?.transaction.payload?.toBoc().toString('base64')).toBe('te6cckEBAQEACQAADgAAAABiaW793PSE')
+  })
+})
+
+describe('parseDeepLink - Validation Errors', () => {
+  test('should reject text + bin (mutually exclusive)', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&text=hello&bin=te6cckEBAQEACQAADgAAAABiaW793PSE')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('mutually exclusive')
+  })
+
+  test('should reject exp without amount', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?exp=1796015245')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('exp')
+    expect(result.error?.message).toContain('amount')
+  })
+
+  test('should reject jetton + init', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&init=te6cckEBAQEACQAADgAAAABpbml093PSE')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('init')
+    expect(result.error?.message).toContain('jetton')
+  })
+
+  test('should reject invalid address', () => {
+    const result = parseDeepLink('ton://transfer/invalid-address?amount=1000000000')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('address')
+  })
+
+  test('should reject invalid amount (negative)', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=-1000')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('amount')
+  })
+
+  test('should reject invalid amount (not a number)', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=abc')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('amount')
+  })
+
+  test('should reject expired transaction', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&exp=1000000000')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('expired')
+  })
+
+  test('should reject unknown parameters', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&unknown=value')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('unknown')
+  })
+
+  test('should reject duplicate parameters', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&amount=2000000000')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('duplicate')
+  })
+
+  test('should reject invalid BOC format', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&bin=invalid-base64!!!')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('BOC')
+  })
+})
+
+describe('parseDeepLink - Restricted Mode', () => {
+  test('should accept basic features in restricted mode', () => {
+    const result = parseDeepLink(
+      'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&text=Hello',
+      { restricted: true }
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+  })
+
+  test('should reject bin in restricted mode', () => {
+    const result = parseDeepLink(
+      'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&bin=te6cckEBAQEACQAADgAAAABiaW793PSE',
+      { restricted: true }
+    )
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('bin')
+    expect(result.error?.message).toContain('restricted')
+  })
+
+  test('should reject init in restricted mode', () => {
+    const result = parseDeepLink(
+      'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&init=te6cckEBAQEACQAADgAAAABpbml093PSE',
+      { restricted: true }
+    )
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('init')
+    expect(result.error?.message).toContain('restricted')
+  })
+
+  test('should reject exp in restricted mode', () => {
+    const result = parseDeepLink(
+      'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000&exp=1796015245',
+      { restricted: true }
+    )
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('exp')
+    expect(result.error?.message).toContain('restricted')
+  })
+})
+
+describe('parseDeepLink - Wallet-Specific Prefixes Option', () => {
+  test('should accept ton:// without any options (implicit support)', () => {
+    const result = parseDeepLink(
+      'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000'
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+  })
+
+  test('should accept tonkeeper:// with walletSpecificPrefixes option', () => {
+    const result = parseDeepLink(
+      'tonkeeper://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000',
+      { walletSpecificPrefixes: ['tonkeeper://'] }
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+  })
+
+  test('should accept https universal link with walletSpecificPrefixes option', () => {
+    const result = parseDeepLink(
+      'https://app.tonkeeper.com/transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000',
+      { walletSpecificPrefixes: ['https://app.tonkeeper.com/'] }
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+  })
+
+  test('should accept multiple walletSpecificPrefixes', () => {
+    const result = parseDeepLink(
+      'tonkeeper://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000',
+      { walletSpecificPrefixes: ['tonkeeper://', 'https://app.tonkeeper.com/'] }
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+  })
+
+  test('should reject unknown base when walletSpecificPrefixes is specified', () => {
+    const result = parseDeepLink(
+      'unknown://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdunix4cMFdqsNQh?amount=1000000000',
+      { walletSpecificPrefixes: ['tonkeeper://'] }
+    )
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error).toBeInstanceOf(ParseError)
+  })
+})
+
+describe('parseDeepLink - Network Detection', () => {
+  test('should detect mainnet from non-bounceable friendly address (UQ...)', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.network).toBe('mainnet')
+  })
+
+  test('should detect mainnet from bounceable friendly address (EQ...)', () => {
+    const result = parseDeepLink('ton://transfer/EQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsMCn?amount=1000000000')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.network).toBe('mainnet')
+  })
+
+  test('should detect testnet from non-bounceable friendly address (0Q...)', () => {
+    const result = parseDeepLink('ton://transfer/0QAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsD06?amount=1000000000')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.network).toBe('testnet')
+  })
+
+  test('should detect testnet from bounceable friendly address (kQ...)', () => {
+    const result = parseDeepLink('ton://transfer/kQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsXYZ?amount=1000000000')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.network).toBe('testnet')
+  })
+
+  test('should return undefined network for raw address', () => {
+    const result = parseDeepLink('ton://transfer/0:1964d8f037e87a51b5a6bb53f5d1b1bea7efcdfc94a319db67278e1c30576ab0?amount=1000000000')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.network).toBeUndefined()
+  })
+
+  test('mainnet bounceable and non-bounceable should both be mainnet', () => {
+    const nonBounceable = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1')
+    const bounceable = parseDeepLink('ton://transfer/EQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsMCn?amount=1')
+
+    expect(nonBounceable.transfer?.transaction.network).toBe('mainnet')
+    expect(bounceable.transfer?.transaction.network).toBe('mainnet')
+  })
+
+  test('testnet bounceable and non-bounceable should both be testnet', () => {
+    const nonBounceable = parseDeepLink('ton://transfer/0QAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsD06?amount=1')
+    const bounceable = parseDeepLink('ton://transfer/kQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsXYZ?amount=1')
+
+    expect(nonBounceable.transfer?.transaction.network).toBe('testnet')
+    expect(bounceable.transfer?.transaction.network).toBe('testnet')
+  })
+})
+
+describe('parseDeepLink - Network Validation', () => {
+  test('should accept when options.network matches mainnet address', () => {
+    const result = parseDeepLink(
+      'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000',
+      { network: 'mainnet' }
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.network).toBe('mainnet')
+  })
+
+  test('should accept when options.network matches testnet address', () => {
+    const result = parseDeepLink(
+      'ton://transfer/0QAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsD06?amount=1000000000',
+      { network: 'testnet' }
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.network).toBe('testnet')
+  })
+
+  test('should reject when options.network=mainnet but address is testnet', () => {
+    const result = parseDeepLink(
+      'ton://transfer/0QAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsD06?amount=1000000000',
+      { network: 'mainnet' }
+    )
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('network')
+    expect(result.error?.message).toContain('testnet')
+    expect(result.error?.message).toContain('mainnet')
+  })
+
+  test('should reject when options.network=testnet but address is mainnet', () => {
+    const result = parseDeepLink(
+      'ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000',
+      { network: 'testnet' }
+    )
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('network')
+    expect(result.error?.message).toContain('mainnet')
+    expect(result.error?.message).toContain('testnet')
+  })
+
+  test('should accept raw address with any options.network (no validation)', () => {
+    const mainnetWallet = parseDeepLink(
+      'ton://transfer/0:1964d8f037e87a51b5a6bb53f5d1b1bea7efcdfc94a319db67278e1c30576ab0?amount=1',
+      { network: 'mainnet' }
+    )
+
+    const testnetWallet = parseDeepLink(
+      'ton://transfer/0:1964d8f037e87a51b5a6bb53f5d1b1bea7efcdfc94a319db67278e1c30576ab0?amount=1',
+      { network: 'testnet' }
+    )
+
+    expect(mainnetWallet.error).toBeUndefined()
+    expect(testnetWallet.error).toBeUndefined()
+    expect(mainnetWallet.transfer?.transaction.network).toBeUndefined()
+    expect(testnetWallet.transfer?.transaction.network).toBeUndefined()
+  })
+
+  test('should work when options.network is not provided', () => {
+    const mainnet = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1')
+    const testnet = parseDeepLink('ton://transfer/0QAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsD06?amount=1')
+
+    expect(mainnet.error).toBeUndefined()
+    expect(testnet.error).toBeUndefined()
+    expect(mainnet.transfer?.transaction.network).toBe('mainnet')
+    expect(testnet.transfer?.transaction.network).toBe('testnet')
+  })
+})
+
+describe('parseDeepLink - DNS Resolution', () => {
+  test('should resolve valid TON DNS name', () => {
+    const result = parseDeepLink('ton://transfer/wallet.ton?amount=1000000000')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.params.address).toBe('wallet.ton')
+  })
+
+  test('should reject unresolvable/invalid DNS name', () => {
+    const result = parseDeepLink('ton://transfer/invalid-dns-name.ton?amount=1000000000')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('DNS')
+  })
+})
+
+describe('parseDeepLink - URL Encoding', () => {
+  test('should decode URL-encoded text with special characters', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1&text=Hello%20World%21')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.params).toHaveProperty('text', 'Hello World!')
+  })
+
+  test('should decode URL-encoded bin parameter', () => {
+    const encoded = encodeURIComponent('te6cckEBAQEACQAADgAAAABiaW793PSE')
+    const result = parseDeepLink(`ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1&bin=${encoded}`)
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.payload).toBeDefined()
+  })
+})
+
+describe('parseDeepLink - Complex Parameter Combinations', () => {
+  test('should parse TON transfer with amount+text+exp', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000&text=Payment&exp=1796015245')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.screenMode).toBe('confirmation-screen')
+    expect(result.transfer?.transaction.amount).toBe(1000000000n)
+    expect(result.transfer?.params).toHaveProperty('text', 'Payment')
+    expect(result.transfer?.transaction.validUntil).toBe(1796015245)
+  })
+
+  test('should parse TON transfer with amount+bin+exp', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000&bin=te6cckEBAQEACQAADgAAAABiaW793PSE&exp=1796015245')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.screenMode).toBe('confirmation-screen')
+    expect(result.transfer?.transaction.amount).toBe(1000000000n)
+    expect(result.transfer?.transaction.payload).toBeDefined()
+    expect(result.transfer?.transaction.validUntil).toBe(1796015245)
+  })
+
+  test('should parse TON transfer with amount+init+text', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000&init=te6cckEBAQEACQAADgAAAABpbml093PSE&text=Deploy')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.stateInit).toBeDefined()
+    expect(result.transfer?.params).toHaveProperty('text', 'Deploy')
+  })
+
+  test('should parse TON transfer with amount+init+bin', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000&init=te6cckEBAQEACQAADgAAAABpbml093PSE&bin=te6cckEBAQEACQAADgAAAABiaW793PSE')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.stateInit).toBeDefined()
+    expect(result.transfer?.transaction.payload).toBeDefined()
+  })
+
+  test('should parse TON transfer with amount+init+exp', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000&init=te6cckEBAQEACQAADgAAAABpbml093PSE&exp=1796015245')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.stateInit).toBeDefined()
+    expect(result.transfer?.transaction.validUntil).toBe(1796015245)
+  })
+
+  test('should parse TON transfer with amount+init+bin+exp', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000&init=te6cckEBAQEACQAADgAAAABpbml093PSE&bin=te6cckEBAQEACQAADgAAAABiaW793PSE&exp=1796015245')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.stateInit).toBeDefined()
+    expect(result.transfer?.transaction.payload).toBeDefined()
+    expect(result.transfer?.transaction.validUntil).toBe(1796015245)
+  })
+
+  test('should parse TON transfer with init+text (send-screen)', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?init=te6cckEBAQEACQAADgAAAABpbml093PSE&text=Deploy')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.screenMode).toBe('send-screen')
+    expect(result.transfer?.transaction.stateInit).toBeDefined()
+    expect(result.transfer?.params).toHaveProperty('text', 'Deploy')
+  })
+
+  test('should parse TON transfer with init+bin (send-screen)', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?init=te6cckEBAQEACQAADgAAAABpbml093PSE&bin=te6cckEBAQEACQAADgAAAABiaW793PSE')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.screenMode).toBe('send-screen')
+    expect(result.transfer?.transaction.stateInit).toBeDefined()
+    expect(result.transfer?.transaction.payload).toBeDefined()
+  })
+
+  test('should parse Jetton transfer with jetton+amount+exp', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&amount=1000000000&exp=1796015245')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.screenMode).toBe('confirmation-screen')
+    if (result.transfer && 'jetton' in result.transfer.params) {
+      expect(result.transfer.params.jetton).toBe('EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs')
+    }
+    expect(result.transfer?.transaction.validUntil).toBe(1796015245)
+  })
+
+  test('should parse Jetton transfer with jetton+amount+bin+exp', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?jetton=EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs&amount=1000000000&bin=te6cckEBAQEACQAADgAAAABiaW793PSE&exp=1796015245')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.payload).toBeDefined()
+    expect(result.transfer?.transaction.validUntil).toBe(1796015245)
+  })
+})
+
+describe('parseDeepLink - Edge Cases', () => {
+  test('should accept amount=0', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=0')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.amount).toBe(0n)
+  })
+
+  test('should reject invalid init format in URL', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000&init=invalid-base64!!!')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toMatch(/init|StateInit|BOC/i)
+  })
+
+  test('should reject invalid/non-numeric exp', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1000000000&exp=invalid')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('exp')
+  })
+
+  test('should accept very large amount near uint64 max', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=18446744073709551615')
+
+    expect(result.error).toBeUndefined()
+    expect(result.transfer).toBeDefined()
+    expect(result.transfer?.transaction.amount).toBe(18446744073709551615n)
+  })
+
+  test('should reject decimal/fractional amount', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=123.456')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('amount')
+  })
+})
+
+describe('parseDeepLink - Additional Validation', () => {
+  test('should accept parameters in any order', () => {
+    const result1 = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=1&text=Hello')
+    const result2 = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?text=Hello&amount=1')
+
+    expect(result1.error).toBeUndefined()
+    expect(result2.error).toBeUndefined()
+    expect(result1.transfer?.params).toEqual(result2.transfer?.params)
+  })
+
+  test('should reject parameter names with wrong case', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?Amount=1000000000')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toContain('unknown')
+  })
+
+  test('should reject amount with leading zeros', () => {
+    const result = parseDeepLink('ton://transfer/UQAZZNjwN-h6UbWmu1P10bG-p-_N_JSjGdtnJ44cMFdqsIaw?amount=0123')
+
+    expect(result.transfer).toBeUndefined()
+    expect(result.error).toBeDefined()
+    expect(result.error?.message).toMatch(/amount|leading zero/i)
+  })
+})

@@ -1,0 +1,39 @@
+{
+  "name": "@ton-deeplinks/parser",
+  "version": "0.1.0",
+  "description": "Reference implementation of TON wallet deep link parser",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [
+    "ton",
+    "deeplink",
+    "parser",
+    "wallet"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@ton/core": "^0.62.0"
+  },
+  "devDependencies": {
+    "@ton/crypto": "^3.3.0",
+    "@vitest/ui": "^4.0.10",
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.10"
+  }
+}
