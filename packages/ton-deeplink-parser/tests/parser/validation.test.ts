@@ -307,3 +307,55 @@ describe('Parser - Validation Errors (Throws)', () => {
     expect(result.amount).toBe('1000000000')
   })
 })
+
+describe('Parser - DNS on Testnet (Not Supported)', () => {
+  test('should reject DNS address with network: testnet', () => {
+    expect(() => {
+      parseDeepLink('ton://transfer/wallet.ton?amount=1000000000', {
+        network: 'testnet',
+      })
+    }).toThrow('DNS addresses (.ton domains) are not supported on testnet')
+  })
+
+  test('should reject DNS address with network: testnet (no amount)', () => {
+    expect(() => {
+      parseDeepLink('ton://transfer/wallet.ton', { network: 'testnet' })
+    }).toThrow('DNS addresses (.ton domains) are not supported on testnet')
+  })
+
+  test('should accept DNS address with network: mainnet', () => {
+    const result = parseDeepLink('ton://transfer/wallet.ton?amount=1000000000', {
+      network: 'mainnet',
+    })
+
+    expect(result.dns).toBe('wallet.ton')
+    expect(result.network).toBe('mainnet')
+  })
+
+  test('should accept DNS address with no network option (defaults mainnet)', () => {
+    const result = parseDeepLink('ton://transfer/wallet.ton?amount=1000000000')
+
+    expect(result.dns).toBe('wallet.ton')
+    expect(result.network).toBe('mainnet')
+  })
+})
+
+describe('Parser - Jetton Network Consistency', () => {
+  test('should reject jetton transfer with mismatched networks (mainnet recipient, testnet jetton)', () => {
+    const mainnetAddress = 'EQAHKcE7bfLAfL8KAaqtj00r0VPPTIOwbzY-1xtJQgShfKQF'
+    const testnetJetton = 'kQBynBO23ywHy_CgarY9NK9FTz0yDsG82PtcbSTQgGoXwpAK'
+
+    expect(() => {
+      parseDeepLink(`ton://transfer/${mainnetAddress}?jetton=${testnetJetton}&amount=1000000`)
+    }).toThrow(`Recipient network (mainnet) doesn't match jetton network (testnet)`)
+  })
+
+  test('should reject jetton transfer with mismatched networks (testnet recipient, mainnet jetton)', () => {
+    const testnetAddress = 'kQAHKcE7bfLAfL8KAaqtj00r0VPPTIOwbzY-1xtJQgShfB-P'
+    const mainnetJetton = 'EQBynBO23ywHy_CgarY9NK9FTz0yDsG82PtcbSTQgGoXwiuA'
+
+    expect(() => {
+      parseDeepLink(`ton://transfer/${testnetAddress}?jetton=${mainnetJetton}&amount=1000000`)
+    }).toThrow(`Recipient network (testnet) doesn't match jetton network (mainnet)`)
+  })
+})

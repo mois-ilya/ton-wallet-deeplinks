@@ -4,8 +4,8 @@
  */
 
 import { Cell, Address, loadStateInit } from '@ton/core'
-import { FormatError, ExpiredError, NetworkMismatchError } from './errors.js'
-import type { ParserOptions } from './types.js'
+import { FormatError, ExpiredError, NetworkMismatchError, LogicError } from './errors.js'
+import type { ParserOptions, Network } from './types.js'
 
 /**
  * Validate address format (friendly, raw, or DNS) using @ton/core
@@ -14,7 +14,7 @@ import type { ParserOptions } from './types.js'
 export function validateAddressFormat(
   address: string,
   options?: ParserOptions
-): FormatError | NetworkMismatchError | null {
+): FormatError | NetworkMismatchError | LogicError | null {
   // 1. Check for empty address
   if (!address || address.trim() === '') {
     return new FormatError('invalid-address', 'Address cannot be empty', 'address')
@@ -28,6 +28,16 @@ export function validateAddressFormat(
     if (!name || !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i.test(name)) {
       return new FormatError('invalid-address', `Invalid DNS name format: ${address}`, 'address')
     }
+
+    // DNS is not supported on testnet
+    if (options?.network === 'testnet') {
+      return new LogicError(
+        'invalid-combination',
+        'DNS addresses (.ton domains) are not supported on testnet',
+        'address'
+      )
+    }
+
     return null // DNS - no network validation possible
   }
 
@@ -148,4 +158,20 @@ export function validateTimestampFormat(timestamp: string): FormatError | Expire
   }
 
   return null
+}
+
+/**
+ * Extract network from address for parser return value
+ * - Friendly address: detect from isTestOnly flag → 'mainnet' | 'testnet'
+ * - Raw address: return undefined (caller defaults to mainnet)
+ * - DNS: return undefined (caller defaults to mainnet)
+ */
+export function extractNetworkFromAddress(address: string): Network {
+  // Friendly address - extract network from isTestOnly flag
+  if (Address.isFriendly(address) && Address.parseFriendly(address).isTestOnly) {
+    return 'testnet'
+  }
+
+  // Raw address or DNS - return mainnet
+  return 'mainnet'
 }

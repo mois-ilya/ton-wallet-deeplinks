@@ -128,6 +128,8 @@ export type AmountParams = AmountWithoutExp | AmountWithExp
 export type TonTransferParams = Recipient &
   Payload &
   AmountParams & {
+    /** Network detected from address or defaulted to mainnet */
+    network: Network
     /** StateInit as base64 (TON only, not allowed for Jettons) */
     init?: string
     /** Forbidden for TON transfers */
@@ -143,6 +145,8 @@ export type TonTransferParams = Recipient &
 export type JettonTransferParams = Recipient &
   Payload &
   AmountParams & {
+    /** Network detected from address or defaulted to mainnet */
+    network: Network
     /** Jetton master contract address (required for jetton transfers) */
     jetton: string
     /** StateInit is forbidden for Jetton transfers */
@@ -169,6 +173,8 @@ export type TransferParams = TonTransferParams | JettonTransferParams
 export type RestrictedTonTransferParams = Recipient &
   TextPayload &
   AmountWithoutExp & {
+    /** Network detected from address or defaulted to mainnet */
+    network: Network
     /** Forbidden in restricted mode */
     init?: never
     /** Forbidden for TON transfers */
@@ -185,6 +191,8 @@ export type RestrictedTonTransferParams = Recipient &
 export type RestrictedJettonTransferParams = Recipient &
   TextPayload &
   AmountWithoutExp & {
+    /** Network detected from address or defaulted to mainnet */
+    network: Network
     /** Jetton master contract address (required for jetton transfers) */
     jetton: string
     /** Forbidden in restricted mode */

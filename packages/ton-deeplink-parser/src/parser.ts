@@ -4,7 +4,8 @@
  * Does NOT convert types or resolve DNS
  */
 
-import type { ParserOptions, TransferParams, JettonTransferParams, TransferType } from './types.js'
+import { Address } from '@ton/core'
+import type { ParserOptions, TransferParams, JettonTransferParams, TransferType, Network } from './types.js'
 import { ParseError, FormatError, LogicError, ExpiredError } from './errors.js'
 import {
   validateAddressFormat,
@@ -12,6 +13,7 @@ import {
   validateBOCFormat,
   validateStateInitFormat,
   validateTimestampFormat,
+  extractNetworkFromAddress,
 } from './validators.js'
 
 // ============================================================================
@@ -108,12 +110,33 @@ export function parseDeepLink(
     throw validationError
   }
 
-  // 7. Build and return typed parameters (all strings)
+  // 7. Determine network from addresses
+  const recipientAddress = isDns ? allParams.dns : allParams.address
+  const recipientIsFriendly = Address.isFriendly(recipientAddress)
+  const jettonIsFriendly = isJetton && allParams.jetton ? Address.isFriendly(allParams.jetton) : false
+
+  // Extract networks from friendly addresses
+  const recipientNetwork = recipientIsFriendly ? extractNetworkFromAddress(recipientAddress) : null
+  const jettonNetwork = jettonIsFriendly ? extractNetworkFromAddress(allParams.jetton!) : null
+
+  // Check network consistency for jetton transfers (only if both are friendly)
+  if (recipientNetwork && jettonNetwork && recipientNetwork !== jettonNetwork) {
+    throw new LogicError(
+      'invalid-combination',
+      `Recipient network (${recipientNetwork}) doesn't match jetton network (${jettonNetwork})`,
+      'jetton'
+    )
+  }
+
+  // Final network: friendly address → options → default mainnet
+  const network = recipientNetwork ?? jettonNetwork ?? options.network ?? 'mainnet'
+
+  // 8. Build and return typed parameters (all strings)
   if (isJetton) {
     // Jetton transfer - set dns or address (mutually exclusive)
     const result: Partial<JettonTransferParams> = isDns
-      ? { dns: allParams.dns, jetton: allParams.jetton }
-      : { address: allParams.address, jetton: allParams.jetton }
+      ? { dns: allParams.dns, jetton: allParams.jetton, network }
+      : { address: allParams.address, jetton: allParams.jetton, network }
 
     // Optional fields
     if (allParams.amount !== undefined) result.amount = allParams.amount
@@ -125,8 +148,8 @@ export function parseDeepLink(
   } else {
     // TON transfer - set dns or address (mutually exclusive)
     const result: Partial<TransferParams> = isDns
-      ? { dns: allParams.dns }
-      : { address: allParams.address }
+      ? { dns: allParams.dns, network }
+      : { address: allParams.address, network }
 
     // Optional fields
     if (allParams.amount !== undefined) result.amount = allParams.amount
