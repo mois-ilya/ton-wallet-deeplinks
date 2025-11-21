@@ -1,0 +1,28 @@
+{
+  "name": "ton-wallet-deeplinks",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TON Wallet Deep Links monorepo",
+  "type": "module",
+  "workspaces": [
+    "app",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=app",
+    "build": "npm run build --workspace=packages/ton-deeplink-parser && npm run build --workspace=app",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "dependencies": {
+    "@ton/core": "^0.62.0",
+    "buffer": "^6.0.3"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "vite-plugin-node-polyfills": "^0.24.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=7.0.0"
+  }
+}

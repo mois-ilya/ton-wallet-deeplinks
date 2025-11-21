@@ -5,8 +5,8 @@
  */
 
 import { Address } from '@ton/core'
-import type { ParserOptions, TransferParams, JettonTransferParams, TransferType, Network } from './types.js'
-import { ParseError, FormatError, LogicError, ExpiredError } from './errors.js'
+import type { ParserOptions, TransferParams, JettonTransferParams, TransferType } from './types.js'
+import { ParseError, FormatError, LogicError } from './errors.js'
 import {
   validateAddressFormat,
   validateAmountFormat,

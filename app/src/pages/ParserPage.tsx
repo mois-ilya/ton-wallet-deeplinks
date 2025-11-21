@@ -11,7 +11,14 @@ import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
 // Import parser from the linked package
 import { parseDeepLink } from '../../../packages/ton-deeplink-parser/src/index'
 import type { ParserOptions, TransferParams } from '../../../packages/ton-deeplink-parser/src/types'
-import type { DeepLinkError } from '../../../packages/ton-deeplink-parser/src/errors'
+import {
+  DeepLinkError,
+  FormatError,
+  LogicError,
+  ExpiredError,
+  ParseError,
+  NetworkMismatchError
+} from '../../../packages/ton-deeplink-parser/src/errors'
 
 // Parser result type
 type ParseResult =
@@ -35,14 +42,29 @@ function parseDeepLinkSafe(url: string, options: ParserOptions): ParseResult {
     return { success: true, data: result }
   } catch (error) {
     if (error instanceof Error) {
-      const deepLinkError = error as DeepLinkError
+      let type = 'unknown-error'
+      let param: string | undefined
+
+      if (error instanceof FormatError || error instanceof LogicError || error instanceof ParseError) {
+        type = error.type
+        param = error.param
+      } else if (error instanceof ExpiredError) {
+        type = error.type
+        param = error.param
+      } else if (error instanceof NetworkMismatchError) {
+        type = error.type
+        param = error.param
+      } else if (error instanceof DeepLinkError) {
+        param = error.param
+      }
+
       return {
         success: false,
         error: {
-          type: deepLinkError.type || 'unknown-error',
+          type,
           name: error.name,
           message: error.message,
-          param: (deepLinkError as any).param,
+          param,
         },
       }
     }

@@ -6,9 +6,12 @@
  * Base class for all deep link errors
  */
 export abstract class DeepLinkError extends Error {
-  constructor(message: string, public readonly param?: string) {
+  public readonly param?: string
+
+  constructor(message: string, param?: string) {
     super(message)
     this.name = this.constructor.name
+    this.param = param
   }
 }
 
@@ -94,13 +97,17 @@ export class ParseError extends DeepLinkError {
  */
 export class NetworkMismatchError extends DeepLinkError {
   public readonly type: 'network-mismatch' = 'network-mismatch'
+  public readonly expected: 'mainnet' | 'testnet'
+  public readonly actual: 'mainnet' | 'testnet'
 
   constructor(
     message: string,
-    public readonly expected: 'mainnet' | 'testnet',
-    public readonly actual: 'mainnet' | 'testnet',
+    expected: 'mainnet' | 'testnet',
+    actual: 'mainnet' | 'testnet',
     param?: string
   ) {
     super(message, param)
+    this.expected = expected
+    this.actual = actual
   }
 }
